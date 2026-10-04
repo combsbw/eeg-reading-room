@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>EEG Reading Room</title>
+<meta name="theme-color" content="#edf0f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e151c" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Interactive EEG training: synthetic tracings, quiz, atlas and progress dashboard. Works offline.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EEG Room">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<style>
+/* Layout concept: a reading-room workstation. Paper-like tracing panel is the hero; controls and teaching sit around it in a quiet instrument-gray frame. */
+:root{
+  --bg:#edf0f3; --panel:#fbfcfd; --ink:#16212c; --muted:#5a6b7b; --line:#d2d9e0;
+  --trace:#18232e; --grid:#e3e8ed; --grid-major:#c3ccd5; --ecg:#b4362c;
+  --accent:#1f5fcf; --accent-ink:#ffffff; --mark:#bf4a10; --mark-bg:rgba(191,74,16,.10);
+  --good:#17744a; --bad:#b3261e; --warn:#8f5a00; --soft:#e4e9ee;
+  --font-ui:system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e151c; --panel:#151f29; --ink:#e5ecf2; --muted:#93a4b4; --line:#26343f;
+  --trace:#d6e2ed; --grid:#1b2833; --grid-major:#2a3b4a; --ecg:#ff8b7f;
+  --accent:#6ba4ff; --accent-ink:#08121f; --mark:#ff9a5c; --mark-bg:rgba(255,154,92,.13);
+  --good:#4cc38a; --bad:#ff7b72; --warn:#e3b341; --soft:#1d2a36; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e151c; --panel:#151f29; --ink:#e5ecf2; --muted:#93a4b4; --line:#26343f;
+  --trace:#d6e2ed; --grid:#1b2833; --grid-major:#2a3b4a; --ecg:#ff8b7f;
+  --accent:#6ba4ff; --accent-ink:#08121f; --mark:#ff9a5c; --mark-bg:rgba(255,154,92,.13);
+  --good:#4cc38a; --bad:#ff7b72; --warn:#e3b341; --soft:#1d2a36; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{margin:0;font-weight:600;text-wrap:balance}
+h1{font-size:26px;letter-spacing:-.01em}
+h2{font-size:17px}
+h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;font-family:var(--font-mono)}
+p{margin:0}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;justify-content:space-between;padding-bottom:14px}
+.top p{color:var(--muted);max-width:56ch;margin-top:4px}
+.tabs{display:flex;gap:2px;background:var(--soft);padding:3px;border-radius:8px}
+.tabs button{border:0;background:transparent;padding:7px 16px;border-radius:6px;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.grow{flex:1 1 auto;min-width:0}
+.seg{display:inline-flex;background:var(--soft);border-radius:7px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:5px;color:var(--muted);font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12);font-weight:500}
+.lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font-size:13px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:7px 14px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 10px;font-size:12.5px}
+.btn[disabled]{opacity:.45;cursor:default}
+.vwrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.vtools{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--soft) 55%,var(--panel))}
+.vtools label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.vtools select{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:2px 5px;font-family:var(--font-mono);font-size:12px;color:var(--ink)}
+.vtools .chk input{margin:0}
+.vscroll{overflow-x:auto;background:var(--panel)}
+.vscroll canvas{display:block;touch-action:pan-y;cursor:crosshair}
+.vfoot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;padding:7px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.vfoot .read{font-family:var(--font-mono);color:var(--ink)}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:10px 12px;min-width:0}
+.opt:hover:not([disabled]){border-color:var(--accent)}
+.opt kbd{font-family:var(--font-mono);font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--muted);margin-top:2px}
+.opt.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--panel))}
+.opt.no{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--panel))}
+.opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.opt[disabled]{cursor:default}
+.opt .cat{display:block;font-size:11.5px;color:var(--muted)}
+.verdict{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px}
+.verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)}
+ul.f{margin:6px 0 0;padding-left:18px} ul.f li{margin:3px 0}
+.two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px}
+.note{border-left:3px solid var(--mark);background:var(--mark-bg);padding:8px 12px;border-radius:0 6px 6px 0}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.pill.normal{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+.pill.variant{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.pill.artifact{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.pill.abnormal{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.atlas{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:start}
+.plist{display:flex;flex-direction:column;gap:2px;max-height:78vh;overflow:auto;padding-right:2px}
+.plist h3{margin:12px 0 4px}
+.plist h3:first-child{margin-top:0}
+.plist button{text-align:left;border:0;background:transparent;border-radius:6px;padding:6px 9px;font-size:13px;color:var(--ink)}
+.plist button:hover{background:var(--soft)}
+.plist button[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,var(--panel));font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{padding:14px 16px}
+.tile .n{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px}
+.tile .s{font-size:12px;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:110px 1fr 84px;gap:10px;align-items:center;font-size:13px}
+.bar .track{height:10px;background:var(--soft);border-radius:5px;overflow:hidden}
+.bar .fill{height:100%;border-radius:5px;background:var(--accent)}
+.bar .v{font-family:var(--font-mono);font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cell{border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--panel);text-align:left;min-width:0}
+.cell .nm{font-size:12.5px;line-height:1.3;display:block;overflow-wrap:anywhere}
+.cell .pc{font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cell.g{background:color-mix(in srgb,var(--good) 16%,var(--panel))}
+.cell.a{background:color-mix(in srgb,var(--warn) 18%,var(--panel))}
+.cell.r{background:color-mix(in srgb,var(--bad) 16%,var(--panel))}
+.cell.u{opacity:.7}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.tw{overflow-x:auto}
+details summary{cursor:pointer;font-weight:500}
+details ol{margin:8px 0 0;padding-left:20px} details li{margin:3px 0}
+.foot{margin-top:22px;color:var(--muted);font-size:12.5px;max-width:90ch}
+.prog{height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent)}
+[hidden]{display:none!important}
+@media (max-width:860px){.two,.atlas{grid-template-columns:1fr}.plist{max-height:none;flex-direction:row;flex-wrap:wrap}.plist h3{width:100%}}
+@media (max-width:560px){.qgrid{grid-template-columns:1fr}.bar{grid-template-columns:84px 1fr 70px}h1{font-size:22px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>EEG Reading Room</h1>
+      <p>Synthetic tracings for training your eye: normal rhythms, benign variants, artifacts and the classic abnormal patterns. Every example is redrawn with new timing and sides.</p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="true">Quiz</button>
+      <button role="tab" id="tb-atlas" data-tab="atlas" aria-selected="false">Atlas</button>
+      <button role="tab" id="tb-dash" data-tab="dash" aria-selected="false">Dashboard</button>
+    </nav>
+  </header>
+
+  <!-- QUIZ -->
+  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz">
+    <div class="card stack" id="qSetup">
+      <div class="row">
+        <div class="row"><span class="lbl">Mode</span>
+          <div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (10)</button></div></div>
+        <div class="row"><span class="lbl">Difficulty</span>
+          <div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
+      </div>
+      <div class="row" id="catChips"><span class="lbl">Include</span></div>
+      <div class="row">
+        <button class="btn primary" id="qStart">Start</button>
+        <span id="qDrill" class="chip" hidden></span>
+        <span class="lbl" id="qHelp">Keys: 1–4 answer · H hint · N next</span>
+      </div>
+      <details>
+        <summary>A systematic way to read a page</summary>
+        <ol>
+          <li><b>Technical.</b> Montage, sensitivity, filters, patient state and age.</li>
+          <li><b>Background.</b> Posterior rhythm frequency, symmetry, reactivity; the front-to-back gradient.</li>
+          <li><b>Slowing.</b> Focal or generalized, polymorphic or rhythmic.</li>
+          <li><b>Epileptiform.</b> Aftergoing slow wave, physiologic field, disruption of background.</li>
+          <li><b>Periodic or rhythmic patterns.</b> Lateralized or generalized, rate, evolution.</li>
+          <li><b>Artifact.</b> Is it confined to one electrode, locked to the ECG, or high-frequency?</li>
+          <li><b>Localize.</b> Phase reversals in bipolar, field in referential.</li>
+          <li><b>Impression.</b> Normal or abnormal, degree, distribution, clinical question.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div id="qIntro" class="card">
+      <h2>Pick a mode and press Start</h2>
+      <p style="margin-top:6px;color:var(--muted);max-width:70ch">Practice shows an explanation after every answer and adapts to the patterns you miss. Exam runs ten different patterns and shows the review at the end. You can change montage, sensitivity and filters on any tracing, and drag across it to measure time and frequency.</p>
+    </div>
+
+    <div id="qStage" class="stack" hidden>
+      <div class="row" id="qMeta" style="justify-content:space-between">
+        <div class="row" style="gap:12px"><span class="lbl" id="qCount"></span><div class="prog" style="width:140px" id="qProgWrap" hidden><i id="qProg" style="width:0"></i></div></div>
+        <label class="row lbl" style="gap:6px;text-transform:none;letter-spacing:0"><input type="checkbox" id="qAnn"> Show teaching marks</label>
+      </div>
+      <div id="qViewer"></div>
+      <div class="card stack" id="qCard"></div>
+    </div>
+  </section>
+
+  <!-- ATLAS -->
+  <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
+    <div class="atlas">
+      <div class="card"><div class="plist" id="aList"></div></div>
+      <div class="stack" style="min-width:0">
+        <div class="row" style="justify-content:space-between">
+          <div class="row" style="gap:12px"><h2 id="aName"></h2><span class="pill" id="aCat"></span></div>
+          <div class="row" style="gap:12px">
+            <label class="row lbl" style="gap:6px;text-transform:none;letter-spacing:0"><input type="checkbox" id="aAnn" checked> Teaching marks</label>
+            <button class="btn small" id="aNew">New example</button>
+          </div>
+        </div>
+        <div id="aViewer"></div>
+        <div class="card two" id="aInfo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dash" class="stack" role="tabpanel" aria-labelledby="tb-dash" hidden></section>
+
+  <p class="foot">Tracings are computer-generated teaching models, not patient recordings. Real EEG is messier and more variable, and nothing here is for clinical interpretation. Few EEG patterns are strictly pathognomonic; the abnormal examples are the classic or highly characteristic ones, and each carries caveats about context. Negativity is plotted upward, as is the convention.</p>
+</div>
+
+<script>
+(()=>{
+'use strict';
+/* ============ constants & helpers ============ */
+const FS=200,DUR=10,N=FS*DUR;
+const $=(s,p=document)=>p.querySelector(s),$$=(s,p=document)=>[...p.querySelectorAll(s)];
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ss=x=>x*x*(3-2*x);
+const g=(t,s)=>Math.exp(-t*t/(2*s*s));
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function mkRand(seed){const u=mulberry(seed>>>0);return{u,n(){let a=0;while(a===0)a=u();return Math.sqrt(-2*Math.log(a))*Math.cos(2*Math.PI*u())},r(a,b){return a+(b-a)*u()},pick(a){return a[Math.floor(u()*a.length)]},chance(p){return u()<p}}}
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function shuffle(a,r){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r.u()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* ============ filters ============ */
+function bq(type,f,Q){const w0=2*Math.PI*f/FS,c=Math.cos(w0),s=Math.sin(w0),al=s/(2*Q);let b0,b1,b2;
+  if(type==='lp'){b0=(1-c)/2;b1=1-c;b2=(1-c)/2}else if(type==='hp'){b0=(1+c)/2;b1=-(1+c);b2=(1+c)/2}else{b0=1;b1=-2*c;b2=1}
+  const a0=1+al;return[b0/a0,b1/a0,b2/a0,-2*c/a0,(1-al)/a0]}
+function runbq(x,k){const y=new Float64Array(x.length);let x1=0,x2=0,y1=0,y2=0;for(let i=0;i<x.length;i++){const v=k[0]*x[i]+k[1]*x1+k[2]*x2-k[3]*y1-k[4]*y2;y[i]=v;x2=x1;x1=x[i];y2=y1;y1=v}return y}
+function ff(x,k){const n=x.length,P=Math.min(100,n-2),p=new Float64Array(n+2*P);for(let i=0;i<P;i++){p[i]=2*x[0]-x[P-i];p[n+P+i]=2*x[n-1]-x[n-2-i]}p.set(x,P);let y=runbq(p,k);y.reverse();y=runbq(y,k);y.reverse();return y.subarray(P,P+n)}
+function bandNoise(r,f1,f2,rms){let x=new Float64Array(N+400);for(let i=0;i<x.length;i++)x[i]=r.n();
+  if(f1>0)x=Float64Array.from(ff(x,bq('hp',f1,.707)));if(f2<95)x=Float64Array.from(ff(x,bq('lp',f2,.707)));
+  const o=new Float32Array(N);let s=0;for(let i=0;i<N;i++){const v=x[i+200];o[i]=v;s+=v*v}const k=rms/Math.sqrt(s/N+1e-12);for(let i=0;i<N;i++)o[i]*=k;return o}
+
+/* ============ electrode model ============ */
+const EL=[['Fp1',-.31,.95],['Fp2',.31,.95],['F7',-.81,.59],['F3',-.42,.55],['Fz',0,.52],['F4',.42,.55],['F8',.81,.59],
+['T3',-.95,0],['C3',-.5,0],['Cz',0,0],['C4',.5,0],['T4',.95,0],['T5',-.81,-.59],['P3',-.42,-.55],['Pz',0,-.52],['P4',.42,-.55],['T6',.81,-.59],['O1',-.31,-.95],['O2',.31,-.95]];
+const NE=19,XX=EL.map(e=>e[1]),YY=EL.map(e=>e[2]),IX={};EL.forEach((e,i)=>IX[e[0]]=i);
+const blob=(cx,cy,s)=>EL.map((e,i)=>Math.exp(-((XX[i]-cx)**2+(YY[i]-cy)**2)/(2*s*s)));
+const mulW=(a,b)=>a.map((v,i)=>v*b[i]);
+const hemi=sg=>XX.map(x=>1/(1+Math.exp(-(x*sg)/.18)));
+const W={all:EL.map(()=>1),post:YY.map(y=>Math.exp(-((y+.95)**2)/.5)),ant:YY.map(y=>Math.exp(-((y-.8)**2)/.6)),cen:blob(0,0,.55),fc:blob(0,.25,.8)};
+const one=(...n)=>{const w=new Array(NE).fill(0);n.forEach(([k,v])=>w[IX[k]]=v);return w};
+const jw=(r,w,j=.2)=>w.map(v=>v*(1-j+2*j*r.u()));
+
+/* ============ signal primitives ============ */
+function newRec(){return{V:EL.map(()=>new Float32Array(N)),ecg:new Float32Array(N),beats:[],ann:[],sens:null,loc:null}}
+const ones=()=>new Float32Array(N).fill(1);
+const mul=(a,b)=>{const o=new Float32Array(N);for(let i=0;i<N;i++)o[i]=a[i]*b[i];return o};
+const inv=a=>{const o=new Float32Array(N);for(let i=0;i<N;i++)o[i]=1-a[i];return o};
+function wind(spans,ramp=.2){const a=new Float32Array(N);for(const[t0,t1]of spans){const i0=Math.max(0,Math.floor((t0-ramp)*FS)),i1=Math.min(N-1,Math.ceil((t1+ramp)*FS));for(let n=i0;n<=i1;n++){const t=n/FS,u=ss(clamp((t-t0+ramp)/(2*ramp),0,1))*ss(clamp((t1+ramp-t)/(2*ramp),0,1));if(u>a[n])a[n]=u}}return a}
+function waxwane(r,depth=.5,per=[1,2.2]){const p=r.r(per[0],per[1]),ph=r.u()*6.28,o=new Float32Array(N);for(let n=0;n<N;n++)o[n]=1-depth+depth*(.5+.5*Math.sin(2*Math.PI*n/FS/p+ph));return o}
+function phaseOf(r,f0,drift=.04,fn){const dr=bandNoise(r,.1,.8,1),P=new Float64Array(N);let ph=r.u()*6.28;for(let n=0;n<N;n++){const f=(fn?fn(n/FS):f0)*(1+drift*dr[n]);ph+=2*Math.PI*f/FS;P[n]=ph}return P}
+function addBg(R,r,o={}){const rms=o.rms??4;for(let e=0;e<NE;e++){const x=bandNoise(r,o.lo??1,o.hi??30,rms*(o.w?o.w[e]:1)),V=R.V[e];for(let n=0;n<N;n++)V[n]+=x[n]}}
+function addBand(R,r,w,f1,f2,rms,env){for(let e=0;e<NE;e++){if(w[e]<.02)continue;const x=bandNoise(r,f1,f2,rms*w[e]),V=R.V[e];for(let n=0;n<N;n++)V[n]+=x[n]*(env?env[n]:1)}}
+function addOsc(R,w,P,env,amp,lagK=0,shape){for(let e=0;e<NE;e++){if(w[e]<.015)continue;const lag=lagK*(YY[e]+.95),a=amp*w[e],V=R.V[e];for(let n=0;n<N;n++){const ph=P[n]-lag;V[n]+=a*env[n]*(shape?shape(ph):Math.sin(ph))}}}
+function addSig(R,w,sig,amp){for(let e=0;e<NE;e++){if(w[e]<.01)continue;const V=R.V[e],a=amp*w[e];for(let n=0;n<N;n++)V[n]+=a*sig[n]}}
+function ev(R,r,times,fn,w,amp,o={}){const sp=o.span||.6,jit=o.jit??.1,dl=o.dly;for(const tc of times){const A=amp*(1+jit*r.n());const i0=Math.max(0,Math.floor((tc-sp)*FS)),i1=Math.min(N-1,Math.ceil((tc+sp)*FS));
+  for(let e=0;e<NE;e++){const we=w[e];if(we<.015)continue;const d=dl?dl[e]:0,V=R.V[e];for(let n=i0;n<=i1;n++)V[n]+=we*A*fn(n/FS-tc-d)}}}
+function per(r,t0,t1,p,jit=.05){const o=[];let t=t0;while(t<t1){o.push(t);t+=p*(1+jit*r.n())}return o}
+const T={
+  sharp:t=>g(t,.022)-.25*g(t+.045,.025)-.45*g(t-.17,.07),
+  spk:t=>g(t,.011)-.2*g(t+.03,.013)-.15*g(t-.05,.02),
+  sw:t=>g(t,.012)-.15*g(t+.03,.015)-.75*g(t-.14,.065),
+  tri:t=>.35*g(t+.1,.035)-1.0*g(t,.05)+.5*g(t-.12,.07),
+  blink:t=>-(g(t,.075)-.25*g(t-.22,.1)),
+  kc:t=>g(t+.06,.07)-1.25*g(t-.2,.17),
+  vtx:t=>g(t,.08)-.3*g(t-.14,.09),
+  pop:t=>t<0?0:Math.exp(-t/.25),
+  qrs:t=>g(t,.012)-.28*g(t-.035,.014)+.12*g(t+.04,.012)+.22*g(t-.26,.05),
+  posts:t=>-Math.max(0,1-Math.abs(t)/.06),
+  wick:t=>g(t,.028)-.2*g(t-.075,.05),
+  bets:t=>g(t,.012)-.3*g(t-.03,.02),
+  spind:t=>{const u=(t+.6)/1.2;return u<0||u>1?0:Math.sin(Math.PI*u)**2*Math.sin(2*Math.PI*13*t)}
+};
+function makeEcg(r){const hr=r.r(62,92),beats=[];let t=r.r(0,.5);while(t<DUR+.5){beats.push(t);t+=60/hr*(1+.03*r.n())}
+  const s=new Float32Array(N);for(const b of beats){const i0=Math.max(0,Math.floor((b-.3)*FS)),i1=Math.min(N-1,Math.ceil((b+.5)*FS));for(let n=i0;n<=i1;n++)s[n]+=T.qrs(n/FS-b)}
+  return{sig:s,beats}}
+const lagA=YY.map(y=>.1*(1-y)/2);
+
+/* ============ backgrounds ============ */
+function awakeBg(R,r,o={}){
+  addBg(R,r,{rms:o.rms??3,lo:1,hi:25});
+  const P=phaseOf(r,o.f??r.r(9.5,10.5)),env=mul(waxwane(r,.45),o.win||ones());
+  addOsc(R,W.post.map((v,i)=>v*(XX[i]>0?1.06:1)),P,env,o.A??40,1.0);
+  addBand(R,r,W.ant,14,28,o.beta??3,waxwane(r,.4));
+  if(o.theta)addBand(R,r,W.all,4,7,o.theta,o.thetaEnv)}
+const blinkW=blob(0,1.15,.5);
+function blinks(R,r,times,amp=110){ev(R,r,times,T.blink,blinkW,amp,{span:.7,jit:.15})}
+
+/* ============ pattern generators ============ */
+const GEN={};
+GEN.awake=(R,r)=>{awakeBg(R,r);const b=[r.r(2,3),r.r(6,8)];blinks(R,r,b,60);
+  R.ann.push({t0:0,t1:DUR,txt:'Posterior alpha ~10 Hz, symmetric, waxing and waning'});R.ann.push({t0:b[0]-.2,t1:b[0]+.4,txt:'Blink'});};
+GEN.reactivity=(R,r)=>{const to=r.r(3.4,4.2),tc=to+r.r(3,3.4),w=wind([[0,to-.1],[tc,DUR]],.12);
+  awakeBg(R,r,{win:w,A:42});addBand(R,r,W.all,14,30,3,inv(w));addBand(R,r,W.ant,18,30,2,inv(w));
+  blinks(R,r,[to,to+1.4,to+2.5],95);
+  R.ann.push({t0:0,t1:to-.1,txt:'Eyes closed: alpha'});R.ann.push({t0:to,t1:tc,txt:'Eyes open: alpha attenuates'});R.ann.push({t0:tc,t1:DUR,txt:'Eyes closed: returns'});};
+GEN.drowsy=(R,r)=>{const tf=r.r(2.8,3.8),w=wind([[0,tf]],.9);awakeBg(R,r,{win:w,A:30});
+  const ramp=new Float32Array(N);for(let n=0;n<N;n++)ramp[n]=ss(clamp((n/FS-1.5)/4,0,1));
+  addBand(R,r,W.all.map((v,i)=>.6+.4*W.fc[i]),4,7.5,10,ramp);
+  const f=r.r(.28,.38),ph=r.u()*6;const env=wind([[tf-.5,tf+4.5]],.8);
+  const s=new Float32Array(N);for(let n=0;n<N;n++)s[n]=env[n]*Math.sin(2*Math.PI*f*n/FS+ph);
+  addSig(R,one(['F7',1],['Fp1',.5],['T3',.3]),s,60);addSig(R,one(['F8',-1],['Fp2',-.5],['T4',-.3]),s,60);
+  R.ann.push({t0:0,t1:tf,txt:'Alpha slows and fades'});R.ann.push({t0:tf,t1:DUR,txt:'Diffuse theta, no alpha'});R.ann.push({t0:tf-.3,t1:tf+4,txt:'Slow rolling eye movements F7/F8, out of phase',lvl:1});};
+GEN.n2=(R,r)=>{addBg(R,r,{rms:1.6,lo:1,hi:20});addBand(R,r,W.all,4,7,4.5);addBand(R,r,W.fc,1,3,5);
+  const tk=r.r(4.4,5.4),sp1=r.r(1.3,2.4),sp2=r.r(7.3,8.4);
+  ev(R,r,[tk],T.kc,W.fc,190,{span:.9});const sw=one(['Cz',1],['C3',.8],['C4',.8],['Fz',.7],['F3',.4],['F4',.4],['P3',.2],['P4',.2],['Pz',.3]);
+  ev(R,r,[tk+.65,sp1,sp2],T.spind,sw,48,{span:.8,jit:.12});
+  ev(R,r,[r.r(.6,1)+0],T.vtx,W.fc,60,{span:.5});
+  R.ann.push({t0:tk-.3,t1:tk+.5,txt:'K-complex',lvl:0});R.ann.push({t0:tk+.25,t1:tk+1.05,txt:'Spindle 12–14 Hz',lvl:1});R.ann.push({t0:sp1-.6,t1:sp1+.6,txt:'Spindle'});R.ann.push({t0:sp2-.6,t1:sp2+.6,txt:'Spindle'});};
+GEN.n3=(R,r)=>{addBg(R,r,{rms:3,lo:1,hi:20});addBand(R,r,W.fc.map(v=>.3+.7*v),.5,2.5,36,waxwane(r,.25,[2,4]));
+  ev(R,r,[r.r(2,3),r.r(6,8)],T.spind,one(['Cz',1],['C3',.7],['C4',.7],['Fz',.6]),18,{span:.8});
+  R.ann.push({t0:0,t1:DUR,txt:'Continuous high-amplitude delta (0.5–2 Hz), frontal predominant'});};
+GEN.mu=(R,r)=>{awakeBg(R,r,{A:12,f:r.r(9.6,10.2)});const P=phaseOf(r,r.r(9,10)),arch=p=>Math.cos(p)+.5*Math.cos(2*p);
+  const tm=r.r(4.6,5.2),eL=wind([[.8,3.4],[4.2,6.6],[7.4,9.5]],.2),eR=mul(eL,inv(wind([[tm-.3,tm+2.2]],.2)));
+  addOsc(R,blob(-.5,0,.32),P,mul(eL,waxwane(r,.3)),22,0,arch);addOsc(R,blob(.5,0,.32),P,mul(eR,waxwane(r,.3)),22,0,arch);
+  R.ann.push({t0:.8,t1:3.4,txt:'Mu: arch-shaped, C3/C4'});R.ann.push({t0:tm-.3,t1:tm+2.2,txt:'Left-hand movement blocks right (C4) mu',lvl:1});};
+function drowsyBg(R,r,o={}){const w=wind([[0,.6]],.5);awakeBg(R,r,{win:w,A:20,rms:2,beta:1.5});addBand(R,r,W.all,4,7.5,o.theta??5,null)}
+GEN.wicket=(R,r)=>{drowsyBg(R,r);const sg=r.chance(.5)?-1:1,reg=blob(sg*.85,.1,.34),trains=[r.r(1.6,2.6),r.r(5.6,7)];
+  for(const t of trains){const k=r.pick([5,6,7]);ev(R,r,per(r,t,t+k*.14,.14,.04),T.wick,reg,120,{span:.2})}
+  R.ann.push({t0:trains[0]-.1,t1:trains[0]+.9,txt:'Wicket: 7 Hz arch train, no after-slow'});R.ann.push({t0:trains[1]-.1,t1:trains[1]+.9,txt:'Wicket train',lvl:1});};
+GEN.posts=(R,r)=>{addBg(R,r,{rms:2,lo:1,hi:20});addBand(R,r,W.all,4,7,4);const tr=[r.r(1.4,2.6),r.r(5.2,6.8)];
+  for(const t of tr){ev(R,r,per(r,t,t+r.pick([4,5,6])*.22,.22,.05),T.posts,blob(0,-.95,.5),45,{span:.15})}
+  R.ann.push({t0:tr[0]-.1,t1:tr[0]+1.2,txt:'Positive triangles at O1/O2, 4–5 Hz'});R.ann.push({t0:tr[1]-.1,t1:tr[1]+1.2,txt:'POSTS',lvl:1});};
+GEN.bets=(R,r)=>{drowsyBg(R,r,{theta:5});const ts=[],sd=r.chance(.5)?-1:1;let t=r.r(1,2);while(t<9){ts.push([t,r.chance(.5)?sd:-sd]);t+=r.r(1.6,2.6)}
+  for(const[t,s]of ts)ev(R,r,[t],T.bets,blob(s*.85,.05,.4),60,{span:.2});
+  ts.slice(0,3).forEach(([t],i)=>R.ann.push({t0:t-.15,t1:t+.2,txt:i?'BETS':'BETS: <50 µV, <50 ms, no after-slow',lvl:i%2}));};
+GEN.blink=(R,r)=>{awakeBg(R,r,{A:30});const b=[];let t=r.r(.6,1.2);while(t<9.3){b.push(t);t+=r.r(1.3,2.2)}
+  blinks(R,r,b,110);R.ann.push({t0:b[0]-.2,t1:b[0]+.45,txt:'Blink: Fp1/Fp2 in phase, fades posteriorly'});};
+GEN.muscle=(R,r)=>{awakeBg(R,r,{A:30});const sp=[[r.r(1.8,2.6),r.r(4.2,4.8)],[r.r(6,6.6),r.r(8.2,9)]],e=wind(sp,.12),m=new Float32Array(N);
+  const mw=r.r(1.8,2.6);for(let n=0;n<N;n++)m[n]=e[n]*(.65+.35*Math.sin(2*Math.PI*mw*n/FS));
+  const w=blob(-.9,.1,.42).map((v,i)=>v+blob(.9,.1,.42)[i]+.55*blob(0,1,.5)[i]);addBand(R,r,w,28,90,26,m);
+  R.ann.push({t0:sp[0][0],t1:sp[0][1],txt:'Muscle: fast, spiky, temporal/frontal'});R.ann.push({t0:sp[1][0],t1:sp[1][1],txt:'Chewing/tension burst',lvl:1});};
+GEN.ecgart=(R,r)=>{awakeBg(R,r,{A:30});const w=one(['T3',1],['T5',.55],['F7',.55],['C3',.35],['Fp1',.2],['O1',.2],['T4',.12],['F8',.1]);
+  ev(R,r,R.beats,t=>T.qrs(t)*1.0,w,48,{span:.3,jit:.04});R.ann.push({t0:R.beats[1]-.15,t1:R.beats[3]+.2,txt:'Spikes align with QRS in ECG row (red)'});};
+GEN.pop=(R,r)=>{awakeBg(R,r,{A:32});const t=r.r(3.2,6.4);ev(R,r,[t],T.pop,one(['T3',1]),-170,{span:2.4,jit:0});ev(R,r,[t],t=>g(t,.01),one(['T3',1]),-60,{span:.2,jit:0});
+  R.ann.push({t0:t-.1,t1:t+1.2,txt:'Electrode pop at T3: abrupt, one electrode only'});};
+GEN.line=(R,r)=>{awakeBg(R,r,{A:32});const ph=r.u()*6.28,aff=[['F4',1],['C4',.9],['Fp2',.5]];for(const[k,v]of aff){const V=R.V[IX[k]];for(let n=0;n<N;n++)V[n]+=16*v*Math.sin(2*Math.PI*60*n/FS+ph)}
+  R.ann.push({t0:.2,t1:DUR-.2,txt:'60 Hz fuzz on the right-sided channels; try the notch filter'});};
+GEN.focal_slow=(R,r)=>{const sg=r.chance(.5)?-1:1;awakeBg(R,r,{A:34});R.loc=sg<0?'Left hemisphere':'Right hemisphere';
+  addBand(R,r,blob(sg*.85,.1,.45),.8,3,34,waxwane(r,.4,[1.5,3.5]));
+  R.ann.push({t0:0,t1:DUR,txt:(sg<0?'Left':'Right')+' temporal polymorphic delta, continuous; alpha preserved elsewhere'});};
+GEN.firda=(R,r)=>{awakeBg(R,r,{A:20,f:8.2,theta:4});const runs=[[r.r(1.6,2.4),r.r(4.8,5.6)],[r.r(7,7.4),r.r(9.2,9.8)]],P=phaseOf(r,r.r(2.2,2.6),.03);
+  addOsc(R,W.ant,P,wind(runs,.35),48,0,p=>Math.sin(p)+.2*Math.sin(2*p));R.loc='Generalized (bilateral, symmetric)';
+  R.ann.push({t0:runs[0][0],t1:runs[0][1],txt:'FIRDA: rhythmic 2–3 Hz delta, frontal'});R.ann.push({t0:runs[1][0],t1:runs[1][1],txt:'FIRDA',lvl:1});};
+GEN.temporal_spikes=(R,r)=>{const sg=r.chance(.5)?-1:1;awakeBg(R,r,{A:34});R.loc=sg<0?'Left hemisphere':'Right hemisphere';
+  const ts=[];let t=r.r(1,1.8);while(t<9){ts.push(t);t+=r.r(1.8,3)}ev(R,r,ts,T.sharp,blob(sg*.82,.5,.33),130,{span:.5});
+  ts.slice(0,3).forEach((t,i)=>R.ann.push({t0:t-.12,t1:t+.35,txt:i?'Spike + slow wave':(sg<0?'F7':'F8')+' phase reversal, after-going slow wave',lvl:i%2}));};
+GEN.sw3=(R,r)=>{awakeBg(R,r,{A:26,f:9.2});const t0=r.r(1.8,3),t1=t0+r.r(5.2,6.2),ts=[];let t=t0;while(t<t1){ts.push(t);const f=3.3-.7*(t-t0)/(t1-t0);t+=1/f}
+  addSig(R,W.all,new Float32Array(N),0);const dl=YY.map((y,i)=>.008*Math.hypot(XX[i],y-.3));
+  const bw=wind([[t0,t1]],.04);for(let e=0;e<NE;e++){const V=R.V[e];for(let n=0;n<N;n++)V[n]*=1-.7*bw[n]*(W.post[e]>.5?1:.3)}
+  ev(R,r,ts,T.sw,jw(r,blob(0,.35,.8).map(v=>.25+.75*v),.12),150,{span:.5,dly:dl,jit:.07});R.loc='Generalized (bilateral, symmetric)';
+  R.ann.push({t0,t1,txt:'Generalized 3 Hz spike-and-wave: abrupt onset and offset'});R.ann.push({t0:t1-1.6,t1,txt:'Slows to ~2.7 Hz',lvl:1});};
+GEN.hyps=(R,r)=>{R.sens=30;for(let e=0;e<NE;e++){const x=bandNoise(r,.5,3.5,75),y=bandNoise(r,8,20,10),V=R.V[e];for(let n=0;n<N;n++)V[n]+=x[n]+y[n]}
+  for(let i=0;i<12;i++)ev(R,r,[r.r(.3,9.7)],T.sharp,blob(r.r(-.8,.8),r.r(-.8,.8),.28),r.pick([-1,1])*r.r(110,210)*-1+0,{span:.4,jit:0});
+  R.loc='Bilateral independent';R.ann.push({t0:0,t1:DUR,txt:'Chaotic, asynchronous high-voltage slow waves with multifocal spikes'});};
+GEN.lpd=(R,r)=>{const sg=r.chance(.5)?-1:1,h=hemi(sg);R.loc=sg<0?'Left hemisphere':'Right hemisphere';
+  awakeBg(R,r,{A:26});addBand(R,r,h,.8,3,4.5,waxwane(r,.3));addBand(R,r,h,1,25,2);
+  const p=r.r(.9,1.25),ts=per(r,r.r(.2,.8),9.8,p,.04),w=XX.map((x,i)=>.08+.92*h[i]*Math.exp(-((x-sg*.55)**2+(YY[i]-.15)**2)/(2*.8*.8)));
+  ev(R,r,ts,T.sharp,jw(r,w,.12),230,{span:.5,jit:.07});
+  R.ann.push({t0:0,t1:DUR,txt:'LPD ~'+(1/p).toFixed(1)+' Hz over the '+(sg<0?'left':'right')+' hemisphere; other side relatively spared'});};
+GEN.gpd=(R,r)=>{R.sens=10;const p=r.r(.45,.85);addBg(R,r,{rms:2.5,lo:1,hi:25});const ts=per(r,r.r(.1,.5),9.9,p,.03),dl=YY.map((y,i)=>.012*Math.hypot(XX[i],y-.3));
+  ev(R,r,ts,T.sharp,jw(r,blob(0,.3,.75).map(v=>.2+.8*v),.12),150,{span:.5,dly:dl,jit:.06});R.loc='Generalized (bilateral, symmetric)';
+  R.ann.push({t0:0,t1:DUR,txt:'GPD ~'+(1/p).toFixed(1)+' Hz, bilateral and synchronous, almost no background between'});};
+GEN.triphasic=(R,r)=>{R.sens=10;addBg(R,r,{rms:2,lo:1,hi:25});addBand(R,r,W.all,4,7,5);addBand(R,r,W.all,1,3,3.5);
+  const p=r.r(.55,.8),ts=per(r,r.r(.1,.5),9.9,p,.05);ev(R,r,ts,T.tri,jw(r,blob(0,.45,.85).map(v=>.25+.75*v),.12),170,{span:.5,dly:lagA});R.loc='Generalized (bilateral, symmetric)';
+  R.ann.push({t0:0,t1:DUR,txt:'Triphasic waves ~'+(1/p).toFixed(1)+' Hz, frontal lead, slow background'});R.ann.push({t0:ts[1]-.25,t1:ts[1]+.35,txt:'Neg–POS–neg; posterior channels lag',lvl:1});};
+GEN.bs=(R,r)=>{R.sens=15;addBg(R,r,{rms:1.3,lo:1,hi:30});let t=r.r(.4,1),bursts=[];while(t<9.6){const d=r.r(1.2,2);bursts.push([t,Math.min(9.9,t+d)]);t+=d+r.r(3,4.2)}
+  const bw=wind(bursts,.04),w=W.fc.map(v=>.3+.7*v);addBand(R,r,w,.6,4,50,bw);addBand(R,r,w,8,25,10,bw);
+  for(const[a,b]of bursts)ev(R,r,[a+.2,a+.5*(b-a),b-.25],T.sharp,jw(r,w,.15),90,{span:.4});R.loc='Generalized (bilateral, symmetric)';
+  bursts.forEach(([a,b],i)=>R.ann.push({t0:a,t1:b,txt:i?'Burst':'Burst: high-amplitude, generalized, abrupt'}));
+  if(bursts.length)R.ann.push({t0:bursts[0][1]+.2,t1:bursts[1]?bursts[1][0]-.2:9.8,txt:'Suppression (<10 µV)',lvl:1});};
+GEN.cjd=(R,r)=>{R.sens=10;addBg(R,r,{rms:3,lo:1,hi:25});addBand(R,r,W.all,3,7,9);addBand(R,r,W.all,1,3,8);
+  const p=r.r(.9,1.05),ts=per(r,r.r(.2,.7),9.9,p,.015);ev(R,r,ts,T.sharp,jw(r,blob(0,.2,.8).map(v=>.25+.75*v),.1),115,{span:.5,jit:.04});R.loc='Generalized (bilateral, symmetric)';
+  R.ann.push({t0:0,t1:DUR,txt:'Periodic sharp wave complexes ~1 Hz, very regular, slow low-voltage background'});};
+GEN.alphacoma=(R,r)=>{addBg(R,r,{rms:2.5,lo:1,hi:25});const P=phaseOf(r,r.r(8.6,9.4),.02),w=W.all.map((v,i)=>.55+.45*W.ant[i]);
+  addOsc(R,w,P,mul(ones(),waxwane(r,.1,[2,4])),34,.25);R.ann.push({t0:0,t1:DUR,txt:'Diffuse monotonous alpha, frontal predominant; no posterior gradient'});};
+GEN.eci=(R,r)=>{R.sens=2;addBg(R,r,{rms:.7,lo:1,hi:40});const ph=r.u()*6;for(const k of['T3','Fp1','O2']){const V=R.V[IX[k]];for(let n=0;n<N;n++)V[n]+=.9*Math.sin(2*Math.PI*60*n/FS+ph)}
+  ev(R,r,R.beats,T.qrs,one(['T3',1],['F7',.6],['T5',.5],['C3',.3]),4,{span:.3,jit:.03});R.ann.push({t0:0,t1:DUR,txt:'No cerebral activity at 2 µV/mm; only ECG and line artifact'});};
+GEN.seizure=(R,r)=>{const sg=r.chance(.5)?-1:1;R.loc=sg<0?'Left hemisphere':'Right hemisphere';awakeBg(R,r,{A:28});const t0=r.r(1.6,2.6),t1=9.7;
+  const fn=t=>t<t0?5.2:t<t0+3.2?5.2+2.4*(t-t0)/3.2:7.6-3.4*(t-t0-3.2)/(t1-t0-3.2),P=phaseOf(r,0,.02,fn),amp=new Float32Array(N),amp2=new Float32Array(N);
+  for(let n=0;n<N;n++){const t=n/FS,u=clamp((t-t0)/(t1-t0),0,1),on=ss(clamp((t-t0)/.5,0,1))*ss(clamp((t1+.2-t)/.4,0,1));amp[n]=on*(.2+.8*u);amp2[n]=on*Math.max(0,u-.25)*1.3}
+  const shape=p=>Math.sin(p)+.45*Math.sin(2*p+.6);const wF=blob(sg*.9,.1,.38),wB=blob(sg*.7,.1,1);
+  addOsc(R,wF,P,amp,75,0,shape);addOsc(R,wB,P,amp2,55,0,shape);
+  R.ann.push({t0:t0,t1:t0+1.6,txt:'Onset: rhythmic theta '+(sg<0?'T3':'T4')});R.ann.push({t0:t0+1.6,t1:t0+4.4,txt:'Evolves: faster, bigger, spreading',lvl:1});R.ann.push({t0:t0+4.4,t1:t1,txt:'Slows toward the end'});};
+GEN.gen_slow=(R,r)=>{addBg(R,r,{rms:3,lo:1,hi:22});const P=phaseOf(r,r.r(5.6,6.8),.05);addOsc(R,W.post,P,waxwane(r,.35),32,1);
+  addBand(R,r,W.all,4,7.5,22,waxwane(r,.35));addBand(R,r,W.all.map((v,i)=>.4+.6*W.ant[i]),1,3.5,22,waxwane(r,.5,[2,4]));
+  R.ann.push({t0:0,t1:DUR,txt:'Posterior rhythm slowed to ~6 Hz with diffuse theta and delta'});};
+
+function generate(pid,seed){const r=mkRand(seed*7919+hash(pid)),R=newRec(),e=makeEcg(r);R.ecg=e.sig;R.beats=e.beats;GEN[pid](R,r);R._c={};return R}
+
+/* ============ pattern catalogue ============ */
+const CAT={normal:'Normal',variant:'Benign variant',artifact:'Artifact',abnormal:'Abnormal'};
+const P=[
+{id:'awake',cat:'normal',name:'Normal awake, eyes closed',
+ feats:['Posterior dominant rhythm about 10 Hz over O1/O2 and P3/P4, waxing and waning','Symmetric between the two sides (within about 50% in amplitude, 1 Hz in frequency)','Faster, lower-amplitude beta anteriorly: amplitude and frequency change front to back','Frontopolar blink artifact is expected whenever the eyes open'],
+ sig:'The reference tracing. Every other pattern is judged against this one.',hints:['Check the occipital channels first.','Compare front with back, then left with right.'],sim:['reactivity','alphacoma','mu'],
+ vs:{alphacoma:'Alpha coma is diffuse and frontally predominant, monotonous, and does not wax and wane or react. Normal alpha is posterior, symmetric and reactive.'}},
+{id:'reactivity',cat:'normal',name:'Alpha attenuation with eye opening',
+ feats:['Alpha is present with the eyes closed and disappears when they open','Replaced by low-voltage fast activity while the eyes are open','Alpha returns on eye closure, symmetrically','Blinks and an eye-opening artifact mark the transition'],
+ sig:'This is normal reactivity. An unreactive background in a comatose patient is a poor sign.',hints:['The rhythm changes partway through the page.','What happens to the posterior channels at the transition?'],sim:['awake','drowsy','alphacoma'],
+ vs:{drowsy:'In drowsiness alpha fades and is replaced by slower theta, with slow eye movements. With eye opening alpha is replaced by low-voltage fast activity and blinks.'}},
+{id:'drowsy',cat:'normal',name:'Drowsiness',
+ feats:['Alpha slows, fragments and drops out','Diffuse theta replaces it and the front-to-back gradient flattens','Slow rolling eye movements at F7/F8, out of phase with each other','The change is state-related and the patient is arousable'],
+ sig:'A normal state transition. It can be mistaken for mild generalized slowing if the state is not noted.',hints:['Look at F7 and F8: they move in opposite directions.','Did the alpha disappear, or was it replaced by faster activity?'],sim:['gen_slow','reactivity','n3'],
+ vs:{gen_slow:'Drowsiness fluctuates, comes with slow rolling eye movements, and the alpha returns on arousal. Encephalopathic slowing persists while the patient is awake and stimulated.'}},
+{id:'n2',cat:'normal',name:'Stage N2 sleep: spindles and K-complex',
+ feats:['Spindles: 12–14 Hz bursts that wax and wane over 0.5–1.5 s, central and frontal','K-complex: a sharp negative wave followed by a slower positive wave, maximal at the vertex','Theta background, no alpha','Often a spindle follows the K-complex'],
+ sig:'Normal sleep. Persistent asymmetry of spindles can point to a structural lesion on the side with fewer spindles.',hints:['Look at the central and vertex channels.','Spindle-shaped bursts around 13 Hz.'],sim:['n3','wicket','posts'],
+ vs:{n3:'N3 is continuous high-amplitude delta. N2 is theta background with discrete spindles and K-complexes.'}},
+{id:'n3',cat:'normal',name:'Slow-wave sleep (N3)',
+ feats:['Continuous high-amplitude delta (0.5–2 Hz, over about 75 µV)','Frontally predominant and symmetric','Occasional spindles ride on the slow waves','No alpha and no eye movements'],
+ sig:'Normal deep sleep. Frontal sleep delta must not be mistaken for pathologic slowing: check the patient state.',hints:['Slow, large and continuous.','Which region has the largest waves?'],sim:['gen_slow','focal_slow','drowsy'],
+ vs:{gen_slow:'Both are slow, but N3 is symmetric, frontal and state-appropriate, with sleep features such as spindles. Encephalopathy occurs in a patient who should be awake.',focal_slow:'N3 delta is bilateral, symmetric and frontal. Focal slowing stays in one region with preserved activity elsewhere.'}},
+{id:'mu',cat:'normal',name:'Mu rhythm',
+ feats:['8–10 Hz arch-shaped (comb) rhythm over C3 and C4','Central distribution, often asymmetric in amplitude','Blocked by contralateral movement or the thought of it, not by eye opening','Seen in the awake, relaxed patient'],
+ sig:'A normal rhythm that is easily mistaken for abnormal sharp or rhythmic activity.',hints:['Which channels carry the rhythm?','Do the peaks look sharp and the troughs rounded?'],sim:['awake','wicket','seizure'],
+ vs:{seizure:'A seizure evolves in frequency, amplitude and field. Mu is stable, central, and attenuates with movement.'}},
+{id:'wicket',cat:'variant',name:'Wicket spikes',
+ feats:['Arch-shaped trains at 6–11 Hz over mid or anterior temporal regions','Drowsiness and light sleep in adults','No after-going slow wave and no disruption of the background','Often unilateral or independently bilateral'],
+ sig:'A benign variant. Reading it as temporal epileptiform activity is a classic overcall.',hints:['Notice the rhythmic, arch-shaped morphology.','Is there a slow wave after each sharp peak?'],sim:['temporal_spikes','seizure','mu'],
+ vs:{temporal_spikes:'Wicket spikes come in arch-shaped rhythmic trains with no after-going slow wave and no background disruption. Temporal spikes are isolated with a slow wave after each.',seizure:'Wicket trains are brief, stable and do not evolve.'}},
+{id:'posts',cat:'variant',name:'Positive occipital sharp transients of sleep (POSTS)',
+ feats:['Surface-positive (downward) triangular waves over O1 and O2','Repeat at 4–5 Hz in light sleep and are symmetric','No after-going slow wave','Seen in N1–N2 sleep only'],
+ sig:'A benign variant that looks like occipital spikes but is positive in polarity and appears in sleep.',hints:['Which direction do the sharp waves point?','Which channels have them?'],sim:['temporal_spikes','n2','bets'],
+ vs:{temporal_spikes:'POSTS are surface-positive, symmetric and occipital in sleep. Epileptiform spikes are negative with an after-going slow wave and a more limited field.'}},
+{id:'bets',cat:'variant',name:'Benign epileptiform transients of sleep (BETS)',
+ feats:['Small sharp spikes under 50 µV and under 50 ms','Temporal, often bilateral and independent with a wide field','Drowsiness and light sleep','No after-going slow wave and no disruption of the background'],
+ sig:'A benign variant. The spikes are small, isolated and occur only in drowsiness or light sleep.',hints:['Are the transients large or small?','Is there a slow wave after each?'],sim:['temporal_spikes','pop','wicket'],
+ vs:{temporal_spikes:'BETS are small (under 50 µV), brief, with no after-going slow wave and appear only in drowsiness. Pathologic temporal spikes are larger with a slow wave and appear in wakefulness as well.'}},
+{id:'blink',cat:'artifact',name:'Eye blinks',
+ feats:['Symmetric frontopolar deflections at Fp1 and Fp2','Fall off posteriorly; positive potential at Fp, downward in Fp1-F7 and Fp2-F8','Present only with the eyes open','Time-locked to eyelid closure and repeat at irregular intervals'],
+ sig:'The most common artifact, and a reliable guide that the eyes are open.',hints:['Where are the largest deflections?','Do both sides move together?'],sim:['pop','focal_slow','firda'],
+ vs:{firda:'Blink deflections are single, brief, frontopolar and stop with the eyes closed. FIRDA is a run of rhythmic sinusoidal delta over the frontal regions.'}},
+{id:'muscle',cat:'artifact',name:'Muscle artifact',
+ feats:['High-frequency spiky activity over 30 Hz','Temporal and frontal regions (temporalis, frontalis)','Bursts with chewing or tension and stops on relaxation','Reduced by a 15–35 Hz high-frequency filter'],
+ sig:'Obscures the underlying EEG. Reassess after the patient relaxes or after a high-frequency filter.',hints:['Try lowering the high-frequency filter.','Where is it located?'],sim:['line','seizure','awake'],
+ vs:{line:'Muscle artifact is irregular and bursting, and depends on movement. 60 Hz noise is perfectly regular and constant.',seizure:'Muscle artifact is high-frequency and unstructured, with no evolving rhythmic pattern and no after-going slowing.'}},
+{id:'ecgart',cat:'artifact',name:'ECG artifact',
+ feats:['Sharp deflections time-locked to the QRS in the ECG row','Regular rate (60–100 per minute)','Maximal over the left temporal region and ear electrodes','More visible in channels with a large inter-electrode distance'],
+ sig:'Harmless, but can resemble periodic sharp waves. Always compare with the ECG channel.',hints:['Compare the timing with the red trace.','Is the rate regular?'],sim:['temporal_spikes','lpd','pop'],
+ vs:{lpd:'ECG artifact is locked to the QRS at a regular cardiac rate and stays in the same electrodes. LPDs vary slightly in timing and sit with a background change over the hemisphere.',temporal_spikes:'Artifact repeats with the heartbeat and has no after-going slow wave.'}},
+{id:'pop',cat:'artifact',name:'Electrode pop',
+ feats:['Abrupt steep rise followed by exponential decay','Confined to a single electrode, so it appears in both channels containing it with opposite polarity','No physiologic field: neighbouring electrodes do not share it','A false phase reversal'],
+ sig:'A technical problem. Reapplication or impedance check of the electrode solves it.',hints:['Which electrode is shared by the affected channels?','Is the onset steeper than any brain wave?'],sim:['temporal_spikes','bets','ecgart'],
+ vs:{temporal_spikes:'A pop is abrupt with a steep rise and slow exponential decay at one electrode and no field in neighbours. A spike has a physiologic field, an after-going slow wave and a normal-looking rise.'}},
+{id:'line',cat:'artifact',name:'60 Hz line noise',
+ feats:['Uniform fine 60 Hz fuzz on the affected channels','Often one or two channels with poor electrode contact','Removed by the 60 Hz notch filter','Constant amplitude with no relation to brain state'],
+ sig:'Technical. Check impedances and cable placement; the notch filter treats the symptom.',hints:['Try the 60 Hz notch.','Is it confined to a few channels?'],sim:['muscle','awake','ecgart'],
+ vs:{muscle:'Line noise is perfectly regular and constant, and vanishes with the notch filter. Muscle artifact is irregular and bursts.'}},
+{id:'focal_slow',cat:'abnormal',name:'Focal polymorphic delta',
+ feats:['Irregular arrhythmic delta (1–3 Hz) confined to one region','Continuous and unreactive','Normal posterior alpha preserved elsewhere','Polymorphic rather than rhythmic, suggesting a structural lesion'],
+ sig:'Suggests focal cortical or subcortical dysfunction such as stroke, tumor, abscess or post-ictal state. Needs correlation and imaging.',hints:['Compare the two hemispheres.','Is the slowing regular or irregular?'],sim:['n3','lpd','gen_slow'],askLoc:true,
+ vs:{lpd:'Focal slowing is continuous without a regular periodic discharge. LPDs repeat at a stable interval with sharp contours.',gen_slow:'Focal slowing involves one region with preserved activity elsewhere. Generalized slowing is bilateral and diffuse.'}},
+{id:'firda',cat:'abnormal',name:'Frontal intermittent rhythmic delta (FIRDA)',
+ feats:['Runs of rhythmic 2–3 Hz delta, frontal predominant, on both sides','Regular and sinusoidal, sometimes notched','Intermittent, lasting seconds','Nonspecific, not epileptiform'],
+ sig:'A nonspecific marker of encephalopathy: metabolic, toxic, structural or deep midline.',hints:['Frontal channels, regular rhythm.','Is there a spike component?'],sim:['sw3','blink','seizure'],askLoc:true,
+ vs:{sw3:'FIRDA is sinusoidal delta with gradual onset and no spikes. 3 Hz spike-and-wave has sharp spikes and begins and ends abruptly.',seizure:'FIRDA does not evolve in frequency, amplitude or field.'}},
+{id:'temporal_spikes',cat:'abnormal',name:'Anterior temporal spikes (interictal)',
+ feats:['Focal sharp transients with an after-going slow wave','Phase reversal at F7 or F8 in the double-banana montage','A physiologic field that disrupts the background','Background otherwise normal and the discharges are sporadic'],
+ sig:'Interictal epileptiform discharges are strongly associated with focal epilepsy, here temporal lobe.',hints:['Look for a phase reversal.','Is there a slow wave after the sharp peak?'],sim:['wicket','bets','pop'],askLoc:true,
+ vs:{wicket:'Temporal spikes are isolated with an after-going slow wave and disrupt the background. Wicket spikes are rhythmic arch trains with no slow wave.',bets:'BETS are small (under 50 µV) and appear only in drowsiness. These discharges are large and have a slow wave.',pop:'A pop has no field in neighbours and decays exponentially. These spikes involve neighbouring electrodes and have an after-going slow wave.',lpd:'Spikes occur sporadically with normal background in between. LPDs repeat at a stable interval.'}},
+{id:'sw3',cat:'abnormal',name:'Generalized 3 Hz spike-and-wave (absence)',
+ feats:['Abrupt onset and offset of regular spike-wave at about 3 Hz','Generalized, bilaterally synchronous with a frontocentral maximum','Rate slows slightly toward the end of the burst','Normal background between bursts, often provoked by hyperventilation'],
+ sig:'Classic for childhood absence epilepsy and genetic generalized epilepsy. Clinically the patient stares and is unresponsive.',hints:['Count the complexes per second.','How abruptly does it start and stop?'],sim:['firda','gpd','seizure'],askLoc:true,
+ vs:{gpd:'3 Hz spike-and-wave starts and stops abruptly with a normal background around it. GPD is persistent and periodic with a long interval between discharges.',firda:'FIRDA is smooth sinusoidal delta without spikes, with gradual onset.'}},
+{id:'hyps',cat:'abnormal',name:'Hypsarrhythmia',
+ feats:['Very high-amplitude chaotic slow waves','Multifocal independent spikes and sharp waves','No organized background','Infants, typically 4–12 months, with epileptic spasms'],
+ sig:'Classic for infantile epileptic spasms (West syndrome). An urgent neurological problem that needs prompt treatment.',hints:['Is there any organization at all?','Are the two hemispheres in step?'],sim:['gen_slow','temporal_spikes','bs'],
+ vs:{gen_slow:'Hypsarrhythmia is chaotic, high-voltage and multifocal with spikes. Generalized slowing is organized and low to moderate in voltage.',bs:'Burst-suppression has flat periods between synchronous bursts. Hypsarrhythmia is continuous and asynchronous.'}},
+{id:'lpd',cat:'abnormal',name:'Lateralized periodic discharges (PLEDs)',
+ feats:['Periodic sharp or sharp-slow complexes at about 0.5–2 Hz over one hemisphere','Highly stereotyped with a regular interval','Slow or attenuated background on the same side','The opposite hemisphere is relatively preserved'],
+ sig:'Associated with acute structural lesions (stroke, HSV encephalitis, tumor) and with seizures. Falls on the ictal-interictal continuum.',hints:['Which side carries the repeating complexes?','Is the interval regular?'],sim:['gpd','temporal_spikes','focal_slow'],askLoc:true,
+ vs:{gpd:'LPDs stay in one hemisphere and the other side has a different background. GPD is bilateral and synchronous.',temporal_spikes:'LPDs repeat at a fixed interval and persist. Interictal spikes are sporadic with a normal background around them.'}},
+{id:'gpd',cat:'abnormal',name:'Generalized periodic discharges (GPD)',
+ feats:['Bilateral synchronous periodic discharges at about 0.5–2.5 Hz','Stereotyped sharp or triphasic complexes at a regular interval','Often little or no background between discharges, as in post-anoxic injury','Persistent and unreactive in severe encephalopathy; sustained rates above 2.5 Hz approach seizure criteria'],
+ sig:'On the ictal-interictal continuum. After cardiac arrest, persistent GPD on a suppressed background is a malignant EEG pattern. Also seen in non-convulsive status and metabolic states.',hints:['Is the pattern symmetric?','What fills the space between the discharges?'],sim:['triphasic','cjd','lpd'],askLoc:true,
+ vs:{triphasic:'Triphasic waves have an anterior-to-posterior lag, a dominant positive middle phase and a slow background, and are usually reactive. GPD are sharper and more stereotyped without a lag.',cjd:'CJD complexes are slower (about 1 Hz) and very regular, with progressive slowing and myoclonus. GPD rates vary with the cause.',lpd:'GPD involves both hemispheres synchronously. LPDs remain in one hemisphere.'}},
+{id:'triphasic',cat:'abnormal',name:'Triphasic waves',
+ feats:['Three phases: small negative, large positive, small negative','Frontal predominant with an anterior-to-posterior lag of 10–140 ms','Regular at about 1–2 Hz on a slow background','Usually reactive and may attenuate with stimulation or benzodiazepines'],
+ sig:'Typical of metabolic encephalopathy (hepatic, uremic). Not pathognomonic, and can mimic GPD.',hints:['Look at the delay between frontal and posterior channels.','What is the background like?'],sim:['gpd','cjd','gen_slow'],askLoc:true,
+ vs:{gpd:'GPD discharges are sharper and synchronous with no lag, often on a suppressed background. Triphasic waves lead frontally and sit on a slow background.',cjd:'CJD complexes are very regular at about 1 Hz and not frontally led.'}},
+{id:'bs',cat:'abnormal',name:'Burst-suppression',
+ feats:['High-amplitude mixed bursts alternating with flat suppression (under 10 µV)','Bursts are generalized and synchronous','Suppression lasts several seconds','Seen with deep anesthesia, hypothermia or severe encephalopathy'],
+ sig:'Reflects severe cortical dysfunction or deliberate suppression. After cardiac arrest, identical bursts and persistent suppression indicate a poor prognosis.',hints:['What is between the bursts?','Are the bursts the same on every channel?'],sim:['gpd','eci','hyps'],askLoc:true,
+ vs:{gpd:'GPD are single repeating complexes. Burst-suppression has multi-second bursts of mixed activity.',eci:'Electrocerebral inactivity has no bursts at all.'}},
+{id:'cjd',cat:'abnormal',name:'Periodic sharp wave complexes (CJD)',
+ feats:['Generalized, very regular periodic sharp waves at about 1 Hz','Biphasic or triphasic sharp complexes','Slow low-voltage deteriorating background','Associated with myoclonus and rapidly progressive dementia'],
+ sig:'Highly characteristic of sporadic Creutzfeldt-Jakob disease in the later stage, though sensitivity is moderate.',hints:['How regular is the interval?','What is the clinical context?'],sim:['gpd','triphasic','lpd'],askLoc:true,
+ vs:{gpd:'CJD complexes have an extremely regular interval near 1 Hz with progressive background slowing. GPD rate varies with the cause.',triphasic:'CJD complexes are sharp and not frontally led.'}},
+{id:'alphacoma',cat:'abnormal',name:'Alpha coma',
+ feats:['Diffuse alpha-frequency activity, frontally predominant','Monotonous, with no posterior gradient','Unreactive to stimuli','The patient is unresponsive'],
+ sig:'Indicates severe diffuse or brainstem injury (anoxic or pontine). Prognosis is generally poor.',hints:['Is the posterior gradient present?','Is the rhythm reactive?'],sim:['awake','reactivity','mu'],
+ vs:{awake:'Normal alpha is posterior, waxes and wanes and reacts to eye opening. Alpha coma is diffuse, monotonous and unreactive in an unresponsive patient.'}},
+{id:'eci',cat:'abnormal',name:'Electrocerebral inactivity',
+ feats:['No cerebral activity above 2 µV at high sensitivity','Remaining signal is ECG, pulse or instrument artifact','Recorded at 2 µV/mm with widely spaced electrodes under technical standards','Requires exclusion of sedatives, hypothermia and metabolic causes'],
+ sig:'Supports the determination of brain death together with the clinical exam. Strict technical standards apply.',hints:['What is the sensitivity setting?','What signals remain?'],sim:['bs','line','ecgart'],
+ vs:{bs:'Burst-suppression has bursts of cerebral activity. Electrocerebral inactivity has none.'}},
+{id:'seizure',cat:'abnormal',name:'Focal seizure (ictal pattern)',
+ feats:['Evolving rhythmic activity: frequency, amplitude and field change','Focal onset, here temporal, then spread','Lasts 10 seconds or more and may end with post-ictal slowing','Correlates with clinical signs'],
+ sig:'An electrographic seizure. Evolution is the key feature separating it from periodic or rhythmic interictal patterns.',hints:['Does the pattern change over time?','Where does it begin?'],sim:['mu','wicket','firda'],askLoc:true,
+ vs:{mu:'Mu is stable and symmetric and attenuates with movement. A seizure evolves and spreads.',wicket:'Wicket trains are brief and stable and do not evolve.',firda:'FIRDA is bilateral and does not evolve.'}},
+{id:'gen_slow',cat:'abnormal',name:'Generalized slowing (encephalopathy)',
+ feats:['Diffuse theta and delta with loss of posterior alpha','Bilateral, symmetric and nonspecific','Posterior rhythm slows below 8 Hz','Severity ranges from mild theta to severe delta'],
+ sig:'Nonspecific diffuse cerebral dysfunction: metabolic, toxic, infectious or post-anoxic.',hints:['What happened to the posterior rhythm?','Is the patient awake?'],sim:['drowsy','n3','focal_slow'],
+ vs:{drowsy:'Encephalopathic slowing persists with eye opening and stimulation. Drowsiness fluctuates with slow eye movements and alpha returns on arousal.',n3:'N3 is symmetric frontal sleep delta with spindles in a sleeping patient.'}}
+];
+const PM={};P.forEach(p=>PM[p.id]=p);
+
+/* ============ montages & rendering ============ */
+const TCP=[['Fp1','F7'],['F7','T3'],['T3','T5'],['T5','O1'],['Fp2','F8'],['F8','T4'],['T4','T6'],['T6','O2'],['T3','C3'],['C3','Cz'],['Cz','C4'],['C4','T4'],['Fp1','F3'],['F3','C3'],['C3','P3'],['P3','O1'],['Fp2','F4'],['F4','C4'],['C4','P4'],['P4','O2']];
+const TRANS=[['Fp1','Fp2'],['F7','F3'],['F3','Fz'],['Fz','F4'],['F4','F8'],['T3','C3'],['C3','Cz'],['Cz','C4'],['C4','T4'],['T5','P3'],['P3','Pz'],['Pz','P4'],['P4','T6'],['O1','O2']];
+const AVGL=['Fp1','F3','C3','P3','O1','F7','T3','T5','Fz','Cz','Pz','Fp2','F4','C4','P4','O2','F8','T4','T6'];
+const DEF={mont:'tcp',sens:7,lff:1,hff:70,notch:false};
+function buildRows(rec,v){const key=[v.mont,v.lff,v.hff,v.notch].join('|');if(rec._c[key])return rec._c[key];
+  const rows=[];const push=(label,sig,grp)=>{let x=sig;if(v.lff>0)x=runbq(x,bq('hp',v.lff,.707));if(v.hff<95)x=runbq(x,bq('lp',v.hff,.707));if(v.notch)x=runbq(x,bq('notch',60,25));rows.push({label,data:Float32Array.from(x),grp})};
+  if(v.mont==='avg'){const m=new Float32Array(N);for(let e=0;e<NE;e++)for(let n=0;n<N;n++)m[n]+=rec.V[e][n]/NE;AVGL.forEach((k,i)=>{const s=new Float32Array(N),V=rec.V[IX[k]];for(let n=0;n<N;n++)s[n]=V[n]-m[n];push(k+'-Av',s,Math.floor(i/5))})}
+  else{const pairs=v.mont==='tcp'?TCP:TRANS,gs=v.mont==='tcp'?4:5;pairs.forEach(([a,b],i)=>{const s=new Float32Array(N),A=rec.V[IX[a]],B=rec.V[IX[b]];for(let n=0;n<N;n++)s[n]=A[n]-B[n];push(a+'-'+b,s,Math.floor(i/gs))})}
+  rows.push({label:'ECG',data:rec.ecg,grp:99,ecg:true});rec._c[key]=rows;return rows}
+
+function Viewer(host){
+  const self={rec:null,v:{...DEF},ann:false,meas:null,done:null};
+  host.innerHTML='';const wrap=el('div','vwrap');
+  wrap.innerHTML=`<div class="vtools">
+  <label>Montage <select data-k="mont"><option value="tcp">Double banana</option><option value="avg">Average reference</option><option value="trans">Transverse</option></select></label>
+  <label>Sensitivity <select data-k="sens">${[2,3,5,7,10,15,20,30,50].map(x=>`<option value="${x}">${x} µV/mm</option>`).join('')}</select></label>
+  <label>LFF <select data-k="lff"><option value="0.3">0.3 Hz</option><option value="1">1 Hz</option><option value="5">5 Hz</option></select></label>
+  <label>HFF <select data-k="hff"><option value="70">70 Hz</option><option value="35">35 Hz</option><option value="15">15 Hz</option></select></label>
+  <label class="chk"><input type="checkbox" data-k="notch"> 60 Hz notch</label>
+  <button class="btn small" data-k="reset" type="button">Reset display</button></div>
+  <div class="vscroll"><canvas></canvas></div>
+  <div class="vfoot"><span>Drag on the tracing to measure. Double-click to clear.</span><span class="read" aria-live="polite">&nbsp;</span></div>`;
+  host.appendChild(wrap);
+  const cv=$('canvas',wrap),sc=$('.vscroll',wrap),read=$('.read',wrap),ctx=cv.getContext('2d');
+  let geo={};
+  const sync=()=>{$$('[data-k]',wrap).forEach(c=>{const k=c.dataset.k;if(k==='reset')return;if(c.type==='checkbox')c.checked=self.v[k];else c.value=String(self.v[k])})};
+  wrap.addEventListener('change',e=>{const c=e.target,k=c.dataset.k;if(!k)return;self.v[k]=c.type==='checkbox'?c.checked:(k==='mont'?c.value:+c.value);self.draw()});
+  $('[data-k=reset]',wrap).addEventListener('click',()=>{self.v={...DEF,sens:self.rec&&self.rec.sens?self.rec.sens:DEF.sens};sync();self.draw()});
+  const col=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  self.setRec=rec=>{self.rec=rec;self.v={...DEF,sens:rec.sens||DEF.sens};self.meas=null;read.innerHTML='&nbsp;';sync();self.draw()};
+  self.setAnn=b=>{self.ann=b;self.draw()};
+  self.draw=()=>{if(!self.rec)return;const rec=self.rec,rows=buildRows(rec,self.v);const dpr=window.devicePixelRatio||1;
+    const cw=Math.max(sc.clientWidth||640,640),LBL=cw<720?58:72,RP=10,rowH=26,gap=7,pxmm=3.6;
+    const cs={bg:col('--panel'),tr:col('--trace'),gr:col('--grid'),gm:col('--grid-major'),mu:col('--muted'),ecg:col('--ecg'),mk:col('--mark'),mb:col('--mark-bg'),ink:col('--ink')};
+    ctx.font='11px '+col('--font-mono');
+    // annotation levels
+    const plotW=cw-LBL-RP,X=t=>LBL+t/DUR*plotW;let levels=0;const chips=[];
+    if(self.ann){const ends=[];for(const a of rec.ann.slice().sort((p,q)=>p.t0-q.t0)){const w=ctx.measureText(a.txt).width+12;let x0=X(a.t0);if(x0+w>cw-4)x0=cw-4-w;let l=0;while(ends[l]!==undefined&&ends[l]>x0-4)l++;ends[l]=x0+w;chips.push({a,x0,w,l});levels=Math.max(levels,l+1)}}
+    const FOOT=38,top=26+levels*18;let ng=0,lastg=-1;rows.forEach(r=>{if(r.grp!==lastg){if(lastg!==-1)ng++;lastg=r.grp}});
+    const H=top+rows.length*rowH+ng*gap+FOOT+4;cv.style.width=cw+'px';cv.style.height=H+'px';cv.width=Math.round(cw*dpr);cv.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle=cs.bg;ctx.fillRect(0,0,cw,H);ctx.font='11px '+col('--font-mono');ctx.textBaseline='middle';
+    // grid
+    for(let i=0;i<=DUR*5;i++){const x=Math.round(X(i/5))+.5,major=i%5===0;ctx.strokeStyle=major?cs.gm:cs.gr;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,top-6);ctx.lineTo(x,H-FOOT);ctx.stroke();
+      if(major){ctx.fillStyle=cs.mu;ctx.textAlign='center';ctx.fillText(String(i/5),x,top-12)}}
+    // annotation bands & chips
+    if(self.ann){for(const a of rec.ann){if(a.t1-a.t0>=9.5)continue;const x0=X(a.t0),x1=Math.max(X(a.t1),x0+8);ctx.fillStyle=cs.mb;ctx.fillRect(x0,top-6,x1-x0,H-FOOT-top+6)}
+      ctx.textAlign='left';for(const c of chips){const y=12+c.l*18;ctx.fillStyle=cs.mk;ctx.globalAlpha=.16;ctx.fillRect(c.x0,y-8,c.w,16);ctx.globalAlpha=1;ctx.fillStyle=cs.mk;ctx.fillRect(c.x0,y-8,2,16);ctx.fillText(c.a.txt,c.x0+7,y)}}
+    // traces
+    const ppu=pxmm/self.v.sens;let y=top,lg=rows[0].grp;geo={LBL,plotW,top,H,cw};
+    ctx.save();ctx.beginPath();ctx.rect(LBL,0,plotW+RP,H);ctx.clip();
+    const ys=[];rows.forEach(r=>{if(r.grp!==lg){y+=gap;lg=r.grp}const cy=y+rowH/2;ys.push(cy);y+=rowH;
+      ctx.strokeStyle=r.ecg?cs.ecg:cs.tr;ctx.lineWidth=r.ecg?1:1.05;ctx.beginPath();const k=r.ecg?rowH*.42:ppu;
+      for(let n=0;n<N;n++){const px=LBL+n/(N-1)*plotW,py=cy-r.data[n]*k;n?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.stroke()});ctx.restore();
+    ctx.textAlign='right';ctx.fillStyle=cs.mu;rows.forEach((r,i)=>{ctx.fillStyle=r.ecg?cs.ecg:cs.mu;ctx.fillText(r.label,LBL-8,ys[i])});
+    // scale bar
+    let uv=10;for(const c of[10,20,50,100,200,500])if(c*ppu<=24)uv=c;const len=uv*ppu,by=H-8;ctx.strokeStyle=cs.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(LBL+10,by);ctx.lineTo(LBL+10,by-len);ctx.stroke();
+    ctx.fillStyle=cs.mu;ctx.textAlign='left';ctx.fillText(uv+' µV',LBL+18,by-len/2);ctx.textAlign='right';ctx.fillText(self.v.sens+' µV/mm · '+self.v.lff+'–'+self.v.hff+' Hz'+(self.v.notch?' · notch':''),cw-RP,H-9);
+    // measure
+    if(self.meas){const[a,b]=self.meas,x0=X(Math.min(a,b)),x1=X(Math.max(a,b));ctx.strokeStyle=cs.mk;ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(x0,top-6);ctx.lineTo(x0,H-FOOT);ctx.moveTo(x1,top-6);ctx.lineTo(x1,H-FOOT);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=cs.mk;ctx.globalAlpha=.08;ctx.fillRect(x0,top-6,x1-x0,H-FOOT-top+6);ctx.globalAlpha=1}
+  };
+  const tOf=e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left;return clamp((x-geo.LBL)/geo.plotW*DUR,0,DUR)};
+  const show=()=>{if(!self.meas)return;const d=Math.abs(self.meas[1]-self.meas[0]);read.textContent=d<.005?'':`Δt ${(d*1000).toFixed(0)} ms  ·  ${(1/d).toFixed(1)} Hz`};
+  let dragging=false;
+  cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&false)return;dragging=true;const t=tOf(e);self.meas=[t,t];try{cv.setPointerCapture(e.pointerId)}catch(_){}self.draw();show()});
+  cv.addEventListener('pointermove',e=>{if(!dragging)return;self.meas[1]=tOf(e);self.draw();show()});
+  cv.addEventListener('pointerup',()=>{dragging=false;if(self.meas&&Math.abs(self.meas[1]-self.meas[0])<.02){self.meas=null;read.innerHTML='&nbsp;';self.draw()}});
+  cv.addEventListener('dblclick',()=>{self.meas=null;read.innerHTML='&nbsp;';self.draw()});
+  new ResizeObserver(()=>self.draw()).observe(sc);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>setTimeout(self.draw,30));
+  new MutationObserver(()=>setTimeout(self.draw,30)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  return self}
+
+/* ============ storage ============ */
+const KEY='eegrr.v1';
+const store={load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.answers))return s}catch(_){}return{answers:[],locs:[],exams:[],best:0}},
+  save(s){try{s.answers=s.answers.slice(-600);s.locs=s.locs.slice(-300);localStorage.setItem(KEY,JSON.stringify(s))}catch(_){}}};
+let DB=store.load();
+function patStats(){const o={};P.forEach(p=>o[p.id]={n:0,ok:0});DB.answers.forEach(a=>{const s=o[a.pid];if(s){s.n++;if(a.ok)s.ok++}});return o}
+
+/* ============ quiz ============ */
+const S={mode:'practice',diff:'standard',cats:{normal:1,variant:1,artifact:1,abnormal:1},drill:null,q:null,exam:null,streak:0,seen:[]};
+const qViewer=Viewer($('#qViewer')),aViewer=Viewer($('#aViewer'));
+const catOf=id=>CAT[PM[id].cat];
+function pool(){let l=P.filter(p=>S.cats[p.cat]);if(S.drill)l=l.filter(p=>S.drill.includes(p.id));return l.length?l:P}
+function pickPattern(){const st=patStats(),pl=pool().filter(p=>!S.seen.slice(-3).includes(p.id)),l=pl.length?pl:pool();
+  const w=l.map(p=>{const s=st[p.id];return s.n===0?2.2:1+2*(1-s.ok/s.n)});let t=w.reduce((a,b)=>a+b,0)*Math.random();for(let i=0;i<l.length;i++){t-=w[i];if(t<=0)return l[i].id}return l[0].id}
+function options(pid,r){const p=PM[pid],all=P.map(x=>x.id).filter(x=>x!==pid);let d=[];
+  const sameCat=all.filter(x=>PM[x].cat===p.cat),other=all.filter(x=>PM[x].cat!==p.cat),sim=(p.sim||[]).filter(x=>S.cats[PM[x].cat]||true);
+  if(S.diff==='hard'){d=[...shuffle(sim,r),...shuffle(sameCat,r),...shuffle(other,r)]}
+  else if(S.diff==='easy'){d=[...shuffle(other,r),...shuffle(sameCat,r)];d=d.filter(x=>!(p.sim||[]).includes(x)).concat(d.filter(x=>(p.sim||[]).includes(x)))}
+  else{d=[...shuffle(sim.slice(0,2),r),...shuffle(sameCat,r),...shuffle(other,r)]}
+  d=[...new Set(d)].slice(0,3);return shuffle([pid,...d],r)}
+function newQ(pid,seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+3);return{pid,seed,opts:options(pid,r),chosen:null,hint:0,rec:generate(pid,seed),loc:null,locAsked:false}}
+function setStage(){$('#qIntro').hidden=!!S.q||!!S.exam&&S.exam.done;$('#qStage').hidden=!S.q&&!(S.exam&&S.exam.done)}
+function showQ(q){S.q=q;S.seen.push(q.pid);setStage();qViewer.setRec(q.rec);qViewer.setAnn(false);$('#qAnn').checked=false;renderCard()}
+function recordAnswer(q,mode){const ok=q.chosen===q.pid;DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});
+  if(mode==='practice'){S.streak=ok?S.streak+1:0;DB.best=Math.max(DB.best||0,S.streak)}store.save(DB);return ok}
+function startQuiz(){S.streak=0;S.seen=[];if(S.mode==='exam'){const r=mkRand(Date.now());const byCat={};pool().forEach(p=>(byCat[p.cat]=byCat[p.cat]||[]).push(p.id));
+    let ids=[];const st=patStats();const weights=pool().map(p=>({id:p.id,w:(st[p.id].n?1+2*(1-st[p.id].ok/st[p.id].n):2)*r.u()}));ids=weights.sort((a,b)=>b.w-a.w).slice(0,Math.min(10,weights.length)).map(x=>x.id);ids=shuffle(ids,r);
+    S.exam={qs:ids.map(id=>newQ(id)),i:0,done:false};showQ(S.exam.qs[0])}else{S.exam=null;showQ(newQ(pickPattern()))}
+  $('#qStart').textContent='Restart'}
+function renderCard(){const q=S.q,card=$('#qCard'),p=PM[q.pid],ex=!!S.exam&&!S.exam.done,answered=q.chosen!==null&&!ex;
+  $('#qCount').textContent=ex?`Question ${S.exam.i+1} of ${S.exam.qs.length}`:`Practice · streak ${S.streak}`;$('#qProgWrap').hidden=!ex;if(ex)$('#qProg').style.width=(S.exam.i/S.exam.qs.length*100)+'%';
+  $('#qAnn').disabled=ex;
+  let h='';
+  if(!answered){h+=`<div class="row" style="justify-content:space-between"><h2>What is this pattern?</h2>${q.hint<p.hints.length?`<button class="btn small" id="qHint">Hint (H)</button>`:''}</div>`;
+    if(q.hint>0)h+=`<div class="note">${p.hints.slice(0,q.hint).map(x=>`<div>${x}</div>`).join('')}</div>`;
+    h+=`<div class="qgrid">${q.opts.map((id,i)=>`<button class="opt" data-id="${id}"><kbd>${i+1}</kbd><span><b style="font-weight:500">${PM[id].name}</b><span class="cat">${catOf(id)}</span></span></button>`).join('')}</div>`}
+  else{const ok=q.chosen===q.pid;
+    h+=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${p.name}</span><span class="pill ${p.cat}">${catOf(q.pid)}</span></div>`;
+    h+=`<div class="qgrid">${q.opts.map(id=>`<div class="opt ${id===q.pid?'ok':id===q.chosen?'no':''}" style="opacity:${id===q.pid||id===q.chosen?1:.55}"><span><b style="font-weight:500">${PM[id].name}</b></span></div>`).join('')}</div>`;
+    h+=`<div class="two"><div><h3>What to look for</h3><ul class="f">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul></div><div class="stack" style="gap:10px">`;
+    if(!ok){const t=(p.vs&&p.vs[q.chosen])||(PM[q.chosen].vs&&PM[q.chosen].vs[q.pid])||`You chose “${PM[q.chosen].name}”. Compare its first feature, “${PM[q.chosen].feats[0]}”, with this pattern's: “${p.feats[0]}”.`;h+=`<div class="note"><b>Versus ${PM[q.chosen].name}.</b> ${t}</div>`}
+    h+=`<div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div></div></div>`;
+    if(p.askLoc){h+=`<div><h3>Distribution</h3><div class="row" style="margin-top:6px" id="locRow">${['Left hemisphere','Right hemisphere','Generalized (bilateral, symmetric)','Bilateral independent'].map(o=>`<button class="chip" data-loc="${o}" ${q.loc?'disabled':''} aria-pressed="${q.loc===o}">${o}</button>`).join('')}</div>${q.loc?`<p style="margin-top:8px">${q.loc===q.rec.loc?'<b style="color:var(--good)">Correct.</b>':'<b style="color:var(--bad)">Not quite.</b>'} This example is <b>${q.rec.loc}</b>.</p>`:''}</div>`}
+    h+=`<div class="row"><button class="btn primary" id="qNext">Next (N)</button><button class="btn" id="qAtlas">Open in Atlas</button></div>`}
+  card.innerHTML=h;
+  $$('.opt[data-id]',card).forEach(b=>b.addEventListener('click',()=>choose(b.dataset.id)));
+  const hb=$('#qHint',card);if(hb)hb.addEventListener('click',hint);
+  $$('[data-loc]',card).forEach(b=>b.addEventListener('click',()=>{q.loc=b.dataset.loc;DB.locs.push({pid:q.pid,ok:q.loc===q.rec.loc,ts:Date.now()});store.save(DB);renderCard()}));
+  const nb=$('#qNext',card);if(nb)nb.addEventListener('click',next);const ab=$('#qAtlas',card);if(ab)ab.addEventListener('click',()=>openAtlas(q.pid,q.seed))}
+function hint(){const q=S.q;if(!q||q.chosen!==null&&!S.exam)return;if(q.hint<PM[q.pid].hints.length){q.hint++;renderCard()}}
+function choose(id){const q=S.q;if(!q||q.chosen!==null&&!(S.exam&&!S.exam.done))return;
+  if(S.exam&&!S.exam.done){q.chosen=id;recordAnswer(q,'exam');S.exam.i++;if(S.exam.i>=S.exam.qs.length)return finishExam();showQ(S.exam.qs[S.exam.i]);return}
+  q.chosen=id;recordAnswer(q,'practice');qViewer.setAnn(true);$('#qAnn').checked=true;renderCard();}
+function next(){if(S.exam&&!S.exam.done)return;showQ(newQ(pickPattern()))}
+function finishExam(){const e=S.exam,score=e.qs.filter(q=>q.chosen===q.pid).length;e.done=true;DB.exams.push({ts:Date.now(),score,n:e.qs.length});store.save(DB);
+  S.q=null;setStage();$('#qStage').hidden=false;$('#qViewer').hidden=true;$('#qMeta').hidden=true;
+  const c=$('#qCard');c.innerHTML=`<h2>Exam complete: ${score} of ${e.qs.length}</h2><div class="prog"><i style="width:${score/e.qs.length*100}%"></i></div>
+  <div class="tw"><table><thead><tr><th>#</th><th>Pattern</th><th>Your answer</th><th></th></tr></thead><tbody>${e.qs.map((q,i)=>`<tr><td>${i+1}</td><td>${PM[q.pid].name}</td><td>${PM[q.chosen].name}</td><td>${q.chosen===q.pid?'<b style="color:var(--good)">Correct</b>':`<button class="btn small" data-rev="${i}">Review</button>`}</td></tr>`).join('')}</tbody></table></div>
+  <div class="row"><button class="btn primary" id="exAgain">New exam</button><button class="btn" id="exDash">Open dashboard</button></div>`;
+  $$('[data-rev]',c).forEach(b=>b.addEventListener('click',()=>{const q=e.qs[+b.dataset.rev];openAtlas(q.pid,q.seed)}));
+  $('#exAgain',c).addEventListener('click',()=>{$('#qViewer').hidden=false;$('#qMeta').hidden=false;startQuiz()});$('#exDash',c).addEventListener('click',()=>setTab('dash'))}
+
+$('#segMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.mode=b.dataset.v;$$('#segMode button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+$('#segDiff').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.diff=b.dataset.v;$$('#segDiff button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+Object.keys(CAT).forEach(k=>{const b=el('button','chip',CAT[k]);b.type='button';b.setAttribute('aria-pressed','true');b.dataset.c=k;b.addEventListener('click',()=>{const on=b.getAttribute('aria-pressed')!=='true';const cnt=Object.values(S.cats).filter(Boolean).length;if(!on&&cnt<=1)return;S.cats[k]=on?1:0;b.setAttribute('aria-pressed',on)});$('#catChips').appendChild(b)});
+$('#qStart').addEventListener('click',()=>{$('#qViewer').hidden=false;$('#qMeta').hidden=false;startQuiz()});
+$('#qAnn').addEventListener('change',e=>qViewer.setAnn(e.target.checked));
+function setDrill(ids){S.drill=ids;const c=$('#qDrill');c.hidden=!ids;if(ids){c.innerHTML=`Drilling ${ids.length} weak patterns <button class="btn small" id="clrDrill" type="button" style="margin-left:6px">Clear</button>`;$('#clrDrill').addEventListener('click',()=>setDrill(null))}}
+document.addEventListener('keydown',e=>{if(!$('#tab-quiz').hidden&&S.q&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){const k=e.key.toLowerCase();
+  if(['1','2','3','4'].includes(k)){const q=S.q;if(q.chosen===null||S.exam&&!S.exam.done){const id=q.opts[+k-1];if(id)choose(id)}}else if(k==='h')hint();else if((k==='n'||k==='enter')&&S.q.chosen!==null&&!S.exam)next()}});
+
+/* ============ atlas ============ */
+let aCur=null,aSeed=1;
+function buildAtlasList(){const l=$('#aList');l.innerHTML='';Object.keys(CAT).forEach(c=>{l.appendChild(el('h3',null,CAT[c]));P.filter(p=>p.cat===c).forEach(p=>{const b=el('button',null,p.name);b.type='button';b.dataset.id=p.id;b.addEventListener('click',()=>showAtlas(p.id));l.appendChild(b)})})}
+function showAtlas(id,seed){aCur=id;aSeed=seed??Math.floor(Math.random()*1e9);const p=PM[id];$$('#aList button').forEach(b=>b.setAttribute('aria-current',b.dataset.id===id));
+  $('#aName').textContent=p.name;const pc=$('#aCat');pc.textContent=CAT[p.cat];pc.className='pill '+p.cat;
+  const rec=generate(id,aSeed);aViewer.setRec(rec);aViewer.setAnn($('#aAnn').checked);
+  const sim=(p.sim||[]).map(s=>{const t=p.vs&&p.vs[s];return t?`<li><b>${PM[s].name}.</b> ${t}</li>`:''}).join('');
+  $('#aInfo').innerHTML=`<div><h3>What to look for</h3><ul class="f">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul></div><div class="stack" style="gap:12px"><div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div>${sim?`<div><h3>Do not confuse with</h3><ul class="f">${sim}</ul></div>`:''}</div>`}
+$('#aNew').addEventListener('click',()=>aCur&&showAtlas(aCur));
+$('#aAnn').addEventListener('change',e=>aViewer.setAnn(e.target.checked));
+function openAtlas(id,seed){setTab('atlas');showAtlas(id,seed)}
+
+/* ============ dashboard ============ */
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.length,ok=A.filter(a=>a.ok).length,unaided=A.filter(a=>!a.h),uok=unaided.filter(a=>a.ok).length;
+  const locs=DB.locs||[],lok=locs.filter(l=>l.ok).length;
+  const cats=Object.keys(CAT).map(c=>{const ids=P.filter(p=>p.cat===c).map(p=>p.id);let n=0,o=0;ids.forEach(i=>{n+=st[i].n;o+=st[i].ok});return{c,n,o}});
+  const tiles=`<div class="tiles"><div class="card tile"><div class="lbl">Answered</div><div class="n">${tot}</div><div class="s">${(DB.exams||[]).length} ${(DB.exams||[]).length===1?'exam':'exams'} taken</div></div>
+  <div class="card tile"><div class="lbl">Accuracy</div><div class="n">${tot?pct(ok,tot)+'%':'–'}</div><div class="s">${unaided.length?`${pct(uok,unaided.length)}% without hints`:'no answers yet'}</div></div>
+  <div class="card tile"><div class="lbl">Best streak</div><div class="n">${DB.best||0}</div><div class="s">in a row, practice mode</div></div>
+  <div class="card tile"><div class="lbl">Localization</div><div class="n">${locs.length?pct(lok,locs.length)+'%':'–'}</div><div class="s">${locs.length} localization answers</div></div></div>`;
+  // trend
+  let trend='';if(tot>=4){const w=10,pts=[];for(let i=0;i<tot;i++){const s=A.slice(Math.max(0,i-w+1),i+1);pts.push(s.filter(a=>a.ok).length/s.length)}
+    const W_=640,H_=140,pl=34,pb=22,pt=10,pr=10,x=i=>pl+(tot>1?i/(tot-1):0)*(W_-pl-pr),y=v=>pt+(1-v)*(H_-pt-pb);
+    const line=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+    trend=`<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Rolling accuracy (last 10 answers)</h3><span class="lbl">${tot} answers</span></div><div class="tw"><svg viewBox="0 0 ${W_} ${H_}" width="100%" style="min-width:420px;max-height:180px" role="img" aria-label="Rolling accuracy over time">
+    ${[0,.5,1].map(v=>`<line x1="${pl}" x2="${W_-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid-major)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${v*100}%</text>`).join('')}
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/><circle cx="${x(tot-1)}" cy="${y(pts[tot-1])}" r="4" fill="var(--accent)"/>
+    <text x="${pl}" y="${H_-4}" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">first answer</text><text x="${W_-pr}" y="${H_-4}" text-anchor="end" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">latest</text></svg></div></div>`}
+  const bars=`<div class="card stack"><h3>By category</h3><div class="bars">${cats.map(c=>`<div class="bar"><span>${CAT[c.c]}</span><div class="track"><div class="fill" style="width:${pct(c.o,c.n)}%"></div></div><span class="v">${c.n?pct(c.o,c.n)+'% · '+c.n:'not seen'}</span></div>`).join('')}</div></div>`;
+  const heat=`<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Every pattern</h3><span class="lbl">green 80%+ · amber 50–79% · red under 50%</span></div><div class="heat">${P.map(p=>{const s=st[p.id],a=s.n?s.ok/s.n:null,cls=a===null?'u':a>=.8?'g':a>=.5?'a':'r';return`<button class="cell ${cls}" data-open="${p.id}" type="button"><span class="nm">${p.name}</span><span class="pc">${s.n?pct(s.ok,s.n)+'% · '+s.n:'unseen'}</span></button>`}).join('')}</div></div>`;
+  // confusions
+  const conf={};A.filter(a=>!a.ok&&a.ch).forEach(a=>{const k=a.pid+'>'+a.ch;conf[k]=(conf[k]||0)+1});const cl=Object.entries(conf).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const confH=`<div class="card stack"><h3>Most common mix-ups</h3>${cl.length?`<div class="tw"><table><thead><tr><th>It was</th><th>You said</th><th>Times</th></tr></thead><tbody>${cl.map(([k,n])=>{const[a,b]=k.split('>');return`<tr><td>${PM[a].name}</td><td>${PM[b].name}</td><td>${n}</td></tr>`}).join('')}</tbody></table></div>`:'<p style="color:var(--muted)">No mistakes recorded yet.</p>'}</div>`;
+  // weak
+  const weak=P.map(p=>({p,s:st[p.id]})).filter(x=>x.s.n>=1&&x.s.ok/x.s.n<.8).sort((a,b)=>a.s.ok/a.s.n-b.s.ok/b.s.n||b.s.n-a.s.n).slice(0,5);
+  const weakH=`<div class="card stack"><h3>Review next</h3>${weak.length?`<ul class="f" style="margin:0">${weak.map(w=>`<li>${w.p.name} <span class="lbl">${pct(w.s.ok,w.s.n)}% · ${w.s.n}</span></li>`).join('')}</ul><div class="row"><button class="btn primary" id="drillBtn" type="button">Drill these patterns</button></div>`:`<p style="color:var(--muted)">${tot?'Nothing below 80% yet. Try Hard difficulty or an exam.':'Answer a few questions and your weakest patterns will be listed here.'}</p>`}</div>`;
+  const exH=(DB.exams||[]).length?`<div class="card stack"><h3>Exam history</h3><div class="tw"><table><thead><tr><th>Date</th><th>Score</th></tr></thead><tbody>${DB.exams.slice(-6).reverse().map(e=>`<tr><td>${new Date(e.ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td>${e.score} / ${e.n}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+  d.innerHTML=tiles+`<div class="two">${bars}${weakH}</div>`+trend+heat+`<div class="two">${confH}${exH||'<div></div>'}</div><div class="row"><button class="btn small" id="resetBtn" type="button">Reset progress</button><span id="resetMsg" class="lbl"></span></div>`;
+  $$('[data-open]',d).forEach(b=>b.addEventListener('click',()=>openAtlas(b.dataset.open)));
+  const db=$('#drillBtn',d);if(db)db.addEventListener('click',()=>{setDrill(weak.map(w=>w.p.id));setTab('quiz')});
+  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],locs:[],exams:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
+
+/* ============ tabs ============ */
+function setTab(t){$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));['quiz','atlas','dash'].forEach(k=>$('#tab-'+k).hidden=k!==t);
+  if(t==='dash')renderDash();if(t==='atlas'&&!aCur)showAtlas('awake');if(t==='atlas')setTimeout(()=>aViewer.draw(),0);if(t==='quiz')setTimeout(()=>qViewer.draw(),0);
+  try{history.replaceState(null,'','#'+t)}catch(_){}}
+$$('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+buildAtlasList();
+
+const h0=(location.hash||'').slice(1);if(['quiz','atlas','dash'].includes(h0))setTab(h0);
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('Service worker not registered',e)})})}
+</script>
+</body>
+</html>

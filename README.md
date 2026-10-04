@@ -29,3 +29,9 @@ If you change any file, bump `CACHE_VERSION` in `sw.js` so installed copies pick
 ## Notice
 
 The tracings are computer-generated teaching models, not patient recordings. Real EEG is messier and more variable. Nothing here is for clinical interpretation. Few EEG patterns are strictly pathognomonic, and each abnormal example carries caveats about clinical context.
+
+## Atlas sections (v2)
+
+- **Rhythms**: infraslow, delta, theta, alpha, mu, sleep spindle, beta and gamma shown alone, stacked on one time base, as a "name that rhythm" quiz, and with a frequency dial.
+- **Leads & montages**: interactive 10–20 map (what each electrode looks at), step-by-step placement and measurement, Input 1 / Input 2 for every channel in five montages, and a polarity lab for phase reversals.
+- **Signal & filters**: measurement chain, differential amplification and impedance mismatch, low/high-frequency and notch filters with response curve, an RC circuit lab (time constant, corner frequency, integrator/differentiator) and a sampling/aliasing demo.

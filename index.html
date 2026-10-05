@@ -149,6 +149,7 @@ details ol{margin:8px 0 0;padding-left:20px} details li{margin:3px 0}
 .rcg{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:18px;align-items:start}
 tbody tr[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
 @media (max-width:860px){.lead2,.rcg{grid-template-columns:1fr}.sl{grid-template-columns:104px minmax(0,1fr) 84px}}
+.sister{margin-top:6px;font-size:13px}.sister a{color:var(--accent);text-decoration:none}.sister a:hover{text-decoration:underline}
 [hidden]{display:none!important}
 @media (max-width:860px){.two,.atlas{grid-template-columns:1fr}.plist{max-height:none;flex-direction:row;flex-wrap:wrap}.plist h3{width:100%}}
 @media (max-width:560px){.qgrid{grid-template-columns:1fr}.bar{grid-template-columns:84px 1fr 70px}h1{font-size:22px}}
@@ -162,6 +163,7 @@ tbody tr[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,var
     <div>
       <h1>EEG Reading Room</h1>
       <p>Synthetic tracings for training your eye: normal rhythms, benign variants, artifacts and the classic abnormal patterns. Every example is redrawn with new timing and sides.</p>
+      <p class="sister"><a href="ecg/">Open the ECG Reading Room →</a></p>
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="true">Quiz</button>

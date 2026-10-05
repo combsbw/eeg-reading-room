@@ -1,8 +1,8 @@
-/* EEG Reading Room service worker.
+/* ECG Reading Room service worker.
    Precaches the app shell on install, then serves from cache first so the app
    works fully offline. Bump CACHE_VERSION whenever any cached file changes. */
-const CACHE_VERSION = 'v3';
-const CACHE = 'eeg-reading-room-' + CACHE_VERSION;
+const CACHE_VERSION = 'v1';
+const CACHE = 'ecg-reading-room-' + CACHE_VERSION;
 const SHELL = [
   './',
   'index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('eeg-reading-room-') && k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('ecg-reading-room-') && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -33,8 +33,6 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // The ECG Reading Room in ./ecg/ has its own service worker; leave its requests alone.
-  if (url.pathname.startsWith(new URL('ecg/', self.registration.scope).pathname)) return;
 
   // Page navigations: cache first, then network, and always fall back to the cached shell.
   if (req.mode === 'navigate') {

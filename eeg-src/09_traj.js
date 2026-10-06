@@ -19,9 +19,9 @@ function composeRec(st,seed,o={}){const r=mkRand((seed>>>0)+13),R=newRec(),e=mak
     const ts=per(r,r.r(.1,.6),9.8,1/p.f,.04),dl=p.m1==='G'?(p.tri?lagA:YY.map((y,i)=>.01*Math.hypot(XX[i],y-.3))):null;ev(R,r,ts,p.tri?T.tri:T.sharp,jw(r,w,.1),p.amp,{span:.5,dly:dl,jit:.06});R.ev=ts;if(h)R.fw=w;
     if(p.plus==='+F')addBand(R,r,w,14,22,p.amp*.12,wind(ts.map(t=>[t-.04,t+.25]),.04))}
   if(st.rda){const q=st.rda,w=q.m1==='L'?blob(q.side*.75,.25,.5):W.all.map((x,i)=>.55+.45*W.fc[i]),P=phaseOf(r,q.f,.03);addOsc(R,w,P,waxwane(r,.2,[3,5]),q.amp,0)}
-  if(o.sz){const z=o.sz,t0=z.t0,t1=z.t1,fn=t=>{const u=clamp((t-z.on)/z.len,0,1);return z.f0+(z.f1-z.f0)*u},P=phaseOf(r,0,.02,fn),wF=z.gen?W.all.map(x=>.7):blob(z.side*.85,.15,.38),wB=z.gen?W.all:blob(z.side*.6,.1,1),amp=new Float32Array(N),amp2=new Float32Array(N);
+  if(o.sz){const z=o.sz,t0=z.t0,t1=z.t1,fn=t=>{const u=clamp((t-z.on)/z.len,0,1);return z.f0+(z.f1-z.f0)*u},P=phaseOf(r,0,.02,fn),wF=z.gen?W.all.map(x=>.7):blob(z.cx??z.side*.85,z.cy??.15,z.sw??.38),wB=z.gen?W.all:blob(z.side*.6,.1,1),amp=new Float32Array(N),amp2=new Float32Array(N);
     for(let n=0;n<N;n++){const t=n/FS,on=ss(clamp((t-t0)/.5,0,1))*ss(clamp((t1-t)/.4,0,1)),u=clamp((t-z.on)/z.len,0,1);amp[n]=on*(.3+.7*Math.min(1,u*2));amp2[n]=on*Math.max(0,u-.2)}
-    const sh=p=>Math.sin(p)+.45*Math.sin(2*p+.6);addOsc(R,wF,P,amp,80*Math.max(.6,v),0,sh);addOsc(R,wB,P,amp2,45*Math.max(.6,v),0,sh);if(!z.gen)R.fw=wF;R.sz=z;
+    const sh=p=>Math.sin(p)+.45*Math.sin(2*p+.6);const ka=z.amp??1;addOsc(R,wF,P,amp,80*ka*Math.max(.6,v),0,sh);addOsc(R,wB,P,amp2,45*ka*Math.max(.6,v),0,sh);if(!z.gen)R.fw=wF;R.sz=z;
     if(t0>.3)R.ann.push({t0,t1:Math.min(DUR,t0+2),txt:'Seizure onset'});else R.ann.push({t0:0,t1:DUR,txt:'Ongoing electrographic seizure'})}
   if(st.supp>.02){const bursts=[];let t=r.r(0,1);const burst=Math.max(.6,(1-st.supp)*3.2),gap=burst*st.supp/(1-st.supp+.02);while(t<DUR){const d=burst*r.r(.8,1.2);bursts.push([t,Math.min(DUR,t+d)]);t+=d+gap*r.r(.8,1.2)}
     const bw=wind(bursts,.14);for(let k=0;k<NE;k++){const V=R.V[k];for(let n=0;n<N;n++)V[n]*=.06+.94*bw[n]}

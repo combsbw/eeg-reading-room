@@ -26,3 +26,6 @@ svg.head .el.ans circle{stroke:var(--good);stroke-width:2}svg.head .el.wrong cir
 .tpanel.sel{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
 .tphead{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .tpl{font-weight:700;font-family:var(--font-mono);display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft)}
+.labg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
+@media (max-width:860px){.labg{grid-template-columns:1fr}}
+svg .rg{cursor:pointer}svg .rg:focus{outline:none}svg .rg:hover circle,svg .rg:focus circle{stroke:var(--accent)}

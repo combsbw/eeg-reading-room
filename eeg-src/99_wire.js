@@ -17,6 +17,6 @@ function setTab(t){$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',
 $$('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 buildAtlasList();
 LRN.applySettings();const h0=(location.hash||'').slice(1),hs=h0.split('/');if(['path','quiz','atlas','dash'].includes(hs[0]))setTab(hs[0]);else setTab('path');if(hs[0]==='atlas'&&SID[hs[1]])setSub(hs[1]);
-window.__eeg={GEN,generate,P,PM,CON,CIDX,CAT,showAtlas,setTab,setSub,showQ,newQ,descQ,locQ,clickQ,bgQ,caseQ,mechQ,anaQ,stageQ,LRN,MODS,S,DB:()=>DB,
+window.__eeg={composeRec,mkState,GEN,generate,P,PM,CON,CIDX,CAT,showAtlas,setTab,setSub,showQ,newQ,descQ,locQ,clickQ,bgQ,caseQ,mechQ,anaQ,stageQ,LRN,MODS,S,DB:()=>DB,
   SCN:typeof SCN!=='undefined'?SCN:null,newTrajQ:typeof newTrajQ==='function'?newTrajQ:null,openEvo:typeof openEvo==='function'?openEvo:null};
 })();

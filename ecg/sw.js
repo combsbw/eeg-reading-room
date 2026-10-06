@@ -1,7 +1,7 @@
 /* ECG Reading Room service worker.
    Precaches the app shell on install, then serves from cache first so the app
    works fully offline. Bump CACHE_VERSION whenever any cached file changes. */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = 'ecg-reading-room-' + CACHE_VERSION;
 const SHELL = [
   './',

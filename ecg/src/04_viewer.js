@@ -67,12 +67,12 @@ function Viewer(host,opt={}){
     anns.filter(a=>a.type==='span').forEach(a=>{ctx.fillStyle=C.mk;ctx.globalAlpha=.12;ctx.fillRect(X(a.t0),TOPpx,Math.max(3,X(a.t1)-X(a.t0)),H-TOPpx);ctx.globalAlpha=1});
     // traces
     ctx.lineJoin='round';ctx.lineCap='round';
-    rows.forEach(rw=>rw.cells.forEach(c=>{const d=D[c.lead],i0=Math.max(0,Math.floor(c.t0*FS)),i1=Math.min(N-1,Math.ceil(c.t1*FS)-(c.t1<DUR?1:0));ctx.strokeStyle=C.tr;ctx.lineWidth=Math.max(1,pm*.34);ctx.beginPath();
+    rows.forEach(rw=>rw.cells.forEach(c=>{const d=D[c.lead],i0=Math.max(0,Math.floor(c.t0*FS)),i1=Math.min(N-1,Math.ceil(c.t1*FS)-(c.t1<DUR?1:0));ctx.strokeStyle=C.tr;ctx.lineWidth=Math.max(1,pm*.34)*LRN.tw();ctx.beginPath();
       const step=pm*s/FS<.5?2:1;for(let i=i0;i<=i1;i+=step){const x=X(i/FS),y=c.base-d[i]*g*pm;i===i0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke();
       if(c.t0>0){ctx.strokeStyle=C.tr;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(c.x0,c.base-3*pm);ctx.lineTo(c.x0,c.base+3*pm);ctx.stroke()}
       ctx.fillStyle=C.ink;ctx.font=`600 ${Math.max(11,Math.round(pm*3))}px `+C.ui;ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(c.lead,c.x0+pm*1.2,c.y0+pm*4.2)}));
     // calibration pulses
-    rows.forEach(rw=>{const b=rw.cells[0].base,x0=2*pm,w=.2*s*pm,h=g*pm;ctx.strokeStyle=C.tr;ctx.lineWidth=Math.max(1,pm*.34);ctx.beginPath();ctx.moveTo(.5*pm,b);ctx.lineTo(x0,b);ctx.lineTo(x0,b-h);ctx.lineTo(x0+w,b-h);ctx.lineTo(x0+w,b);ctx.lineTo(x0+w+pm,b);ctx.stroke()});
+    rows.forEach(rw=>{const b=rw.cells[0].base,x0=2*pm,w=.2*s*pm,h=g*pm;ctx.strokeStyle=C.tr;ctx.lineWidth=Math.max(1,pm*.34)*LRN.tw();ctx.beginPath();ctx.moveTo(.5*pm,b);ctx.lineTo(x0,b);ctx.lineTo(x0,b-h);ctx.lineTo(x0+w,b-h);ctx.lineTo(x0+w,b);ctx.lineTo(x0+w+pm,b);ctx.stroke()});
     // labels for spans/points
     lab.forEach(o=>{const y=6+o.l*17;ctx.font='11px '+C.ui;ctx.textBaseline='middle';ctx.fillStyle=C.mk;ctx.globalAlpha=.15;ctx.fillRect(o.x,y-1,o.w,15);ctx.globalAlpha=1;ctx.fillRect(o.x,y-1,2,15);ctx.fillStyle=C.ink;ctx.textAlign='left';ctx.fillText(o.a.txt,o.x+6,y+7);
       if(o.a.type==='pt'){const sr=rows[rows.length-1];ctx.strokeStyle=C.mk;ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(o.x,y+14);ctx.lineTo(o.x,Ymm(sr.top+rowMM*.15));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=C.mk;ctx.beginPath();const ty=Ymm(sr.top+rowMM*.15);ctx.moveTo(o.x-5,ty-7);ctx.lineTo(o.x+5,ty-7);ctx.lineTo(o.x,ty);ctx.fill()}});

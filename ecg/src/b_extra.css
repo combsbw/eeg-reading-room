@@ -38,6 +38,15 @@ details summary{margin-top:4px}
 .corg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.corg{grid-template-columns:1fr}}
 .chip.con{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .chip.con .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
-.chip.con .dot.cell,.dot.cell{background:#1d8686}.chip.con .dot.cond,.dot.cond{background:var(--warn)}.chip.con .dot.flow,.dot.flow{background:var(--bad)}.chip.con .dot.struct,.dot.struct{background:#8a5bd0}.chip.con .dot.sys,.dot.sys{background:var(--accent)}
+.dot.d-cell{background:#1d8686}.dot.d-cond{background:var(--warn)}.dot.d-flow{background:var(--bad)}.dot.d-struct{background:#8a5bd0}.dot.d-sys{background:var(--accent)}
 .qgrid.long{grid-template-columns:1fr}
 .qgrid.long .opt span{font-size:14px;line-height:1.45}
+.tpgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.tpanel{border:2px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);cursor:pointer}
+.tpanel.ctx{cursor:default;border-style:dashed}
+.tpanel:hover:not(.ctx){border-color:var(--accent)}
+.tpanel.sel{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.tphead{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--line)}
+.tpl{font-weight:700;font-family:var(--font-mono);display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft)}
+.tphead .tpfull{margin-left:auto}
+.qgrid.long{grid-template-columns:1fr}

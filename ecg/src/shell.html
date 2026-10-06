@@ -22,18 +22,21 @@
       <!--SISTER-->
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="true">Quiz</button>
+      <button role="tab" id="tb-path" data-tab="path" aria-selected="true">Path</button>
+      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="false">Quiz</button>
       <button role="tab" id="tb-atlas" data-tab="atlas" aria-selected="false">Atlas</button>
       <button role="tab" id="tb-dash" data-tab="dash" aria-selected="false">Dashboard</button>
     </nav>
   </header>
 
   <!-- QUIZ -->
-  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz">
+  <section id="tab-path" class="stack" role="tabpanel" aria-labelledby="tb-path"></section>
+
+  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz" hidden>
     <div class="card stack" id="qSetup">
       <div class="row">
         <div class="row"><span class="lbl">Mode</span><div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (15)</button></div></div>
-        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
+        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="traj" aria-pressed="false">Evolution</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
         <div class="row"><span class="lbl">Difficulty</span><div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
       </div>
       <div class="row" id="catChips"><span class="lbl">Include</span></div>
@@ -76,7 +79,7 @@
 
   <!-- ATLAS -->
   <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
-    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="mech" aria-pressed="false">Mechanisms</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
+    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="evo" aria-pressed="false">Evolution</button><button type="button" data-sub="mech" aria-pressed="false">Mechanisms</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
     <div class="atlas" id="aPat">
       <div class="card plcard"><div class="plist" id="aList"></div></div>
       <label class="msel lbl">Pattern <select id="aSel"></select></label>
@@ -93,6 +96,7 @@
         <div class="card two" id="aInfo"></div>
       </div>
     </div>
+    <div class="stack" id="aEvo" hidden></div>
     <div class="stack" id="aMech" hidden></div>
     <div class="stack" id="aSys" hidden></div>
     <div class="stack" id="aLead" hidden></div>

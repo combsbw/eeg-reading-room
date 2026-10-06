@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ECG Reading Room</title>
+<meta name="theme-color" content="#edf0f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e151c" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Interactive 12-lead ECG training: synthetic tracings, diagnosis and measurement quiz, atlas, systematic read, leads and axis, filters, and a progress dashboard. Works offline.">
+<!--PWAHEAD-->
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>ECG Reading Room</h1>
+      <p>Synthetic 12-lead tracings for training your eye: rhythms, blocks, ischemia and STEMI equivalents, chamber changes, electrolytes, drugs and mimics. Every example is redrawn with a new rate, axis and noise.</p>
+      <!--SISTER-->
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="true">Quiz</button>
+      <button role="tab" id="tb-atlas" data-tab="atlas" aria-selected="false">Atlas</button>
+      <button role="tab" id="tb-dash" data-tab="dash" aria-selected="false">Dashboard</button>
+    </nav>
+  </header>
+
+  <!-- QUIZ -->
+  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz">
+    <div class="card stack" id="qSetup">
+      <div class="row">
+        <div class="row"><span class="lbl">Mode</span><div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (15)</button></div></div>
+        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
+        <div class="row"><span class="lbl">Difficulty</span><div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
+      </div>
+      <div class="row" id="catChips"><span class="lbl">Include</span></div>
+      <div class="row">
+        <button class="btn primary" id="qStart">Start</button>
+        <span id="qDrill" class="chip" hidden></span>
+        <span class="lbl" id="qHelp">Keys: 1–4 answer · H hint · N next</span>
+      </div>
+      <details>
+        <summary>The systematic 12-lead read</summary>
+        <ol>
+          <li><b>Technical.</b> Calibration, speed, filter, artifact, lead reversal.</li>
+          <li><b>Rate.</b> 300 ÷ large boxes, or complexes in 10 s × 6.</li>
+          <li><b>Rhythm.</b> Regular? P before every QRS? QRS after every P? Constant PR?</li>
+          <li><b>Axis.</b> Leads I and aVF, then II.</li>
+          <li><b>Intervals.</b> PR, QRS, QT and QTc.</li>
+          <li><b>P waves.</b> Atrial enlargement, ectopic or retrograde P.</li>
+          <li><b>QRS.</b> Q waves, voltage, R-wave progression, bundle-branch patterns.</li>
+          <li><b>ST segments.</b> Elevation, depression, territory, reciprocity, equivalents.</li>
+          <li><b>T and U waves.</b> Inverted, hyperacute, peaked, flat, U waves.</li>
+          <li><b>Synthesis.</b> Compare with old ECGs, correlate clinically, repeat when in doubt.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div id="qIntro" class="card">
+      <h2>Pick a mode and press Start</h2>
+      <p style="margin-top:6px;color:var(--muted);max-width:74ch">Diagnosis questions ask for the main finding and follow up with a culprit-artery or management question where it matters. Measurement questions ask for rate, regularity, axis, PR, QRS or QTc, computed from the tracing itself. Practice adapts to the patterns you miss; Exam runs fifteen questions and reviews them at the end. Change the layout, gain, speed or filter on any tracing, and drag across it to use calipers.</p>
+    </div>
+
+    <div id="qStage" class="stack" hidden>
+      <div class="row" id="qMeta" style="justify-content:space-between">
+        <div class="row" style="gap:12px"><span class="lbl" id="qCount"></span><div class="prog" style="width:140px" id="qProgWrap" hidden><i id="qProg" style="width:0"></i></div></div>
+        <label class="row lbl" style="gap:6px;text-transform:none;letter-spacing:0"><input type="checkbox" id="qAnn"> Show teaching marks</label>
+      </div>
+      <div id="qViewer"></div>
+      <div class="card stack" id="qCard"></div>
+    </div>
+  </section>
+
+  <!-- ATLAS -->
+  <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
+    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
+    <div class="atlas" id="aPat">
+      <div class="card plcard"><div class="plist" id="aList"></div></div>
+      <label class="msel lbl">Pattern <select id="aSel"></select></label>
+      <div class="stack" style="min-width:0">
+        <div class="row" style="justify-content:space-between">
+          <div class="row" style="gap:12px"><h2 id="aName"></h2><span class="pill" id="aCat"></span></div>
+          <div class="row" style="gap:12px">
+            <label class="row lbl" style="gap:6px;text-transform:none;letter-spacing:0"><input type="checkbox" id="aAnn" checked> Teaching marks</label>
+            <button class="btn small" id="aNew">New example</button>
+          </div>
+        </div>
+        <div id="aViewer"></div>
+        <div class="card two" id="aInfo"></div>
+      </div>
+    </div>
+    <div class="stack" id="aSys" hidden></div>
+    <div class="stack" id="aLead" hidden></div>
+    <div class="stack" id="aRate" hidden></div>
+    <div class="stack" id="aSig" hidden></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dash" class="stack" role="tabpanel" aria-labelledby="tb-dash" hidden></section>
+
+  <p class="foot">Tracings are computer-generated teaching models built from a vector model of the heart, not patient recordings. Real ECGs vary more, and nothing here is for clinical decisions. Thresholds and treatments summarize common guidance and change over time; follow your local protocols and medical direction.</p>
+</div>
+
+<script>
+/*JS*/
+</script>
+<!--PWASW-->
+</body>
+</html>

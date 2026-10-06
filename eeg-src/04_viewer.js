@@ -28,7 +28,7 @@ function Viewer(host){
   wrap.addEventListener('change',e=>{const c=e.target,k=c.dataset.k;if(!k)return;self.v[k]=c.type==='checkbox'?c.checked:(k==='mont'?c.value:+c.value);self.draw()});
   $('[data-k=reset]',wrap).addEventListener('click',()=>{self.v={...DEF,sens:self.rec&&self.rec.sens?self.rec.sens:DEF.sens};sync();self.draw()});
   const col=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  self.setRec=rec=>{self.rec=rec;self.v={...DEF,sens:rec.sens||DEF.sens};self.meas=null;read.innerHTML='&nbsp;';sync();self.draw()};
+  self.setRec=rec=>{self.rec=rec;self.marks=[];self.v={...DEF,sens:rec.sens||DEF.sens};self.meas=null;read.innerHTML='&nbsp;';sync();self.draw()};
   self.setAnn=b=>{self.ann=b;self.draw()};
   self.draw=()=>{if(!self.rec)return;const rec=self.rec,rows=buildRows(rec,self.v);const dpr=window.devicePixelRatio||1;
     const cw=Math.max(sc.clientWidth||640,640),LBL=cw<720?58:72,RP=10,rowH=26,gap=7,pxmm=3.6;
@@ -44,27 +44,28 @@ function Viewer(host){
     for(let i=0;i<=DUR*5;i++){const x=Math.round(X(i/5))+.5,major=i%5===0;ctx.strokeStyle=major?cs.gm:cs.gr;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,top-6);ctx.lineTo(x,H-FOOT);ctx.stroke();
       if(major){ctx.fillStyle=cs.mu;ctx.textAlign='center';ctx.fillText(String(i/5),x,top-12)}}
     // annotation bands & chips
-    if(self.ann){for(const a of rec.ann){if(a.t1-a.t0>=9.5)continue;const x0=X(a.t0),x1=Math.max(X(a.t1),x0+8);ctx.fillStyle=cs.mb;ctx.fillRect(x0,top-6,x1-x0,H-FOOT-top+6)}
+    if(self.ann){for(const a of rec.ann){if(a.t1-a.t0>=4)continue;const x0=X(a.t0),x1=Math.max(X(a.t1),x0+8);ctx.fillStyle=cs.mb;ctx.fillRect(x0,top-6,x1-x0,H-FOOT-top+6)}
       ctx.textAlign='left';for(const c of chips){const y=12+c.l*18;ctx.fillStyle=cs.mk;ctx.globalAlpha=.16;ctx.fillRect(c.x0,y-8,c.w,16);ctx.globalAlpha=1;ctx.fillStyle=cs.mk;ctx.fillRect(c.x0,y-8,2,16);ctx.fillText(c.a.txt,c.x0+7,y)}}
     // traces
     const ppu=pxmm/self.v.sens;let y=top,lg=rows[0].grp;geo={LBL,plotW,top,H,cw};
     ctx.save();ctx.beginPath();ctx.rect(LBL,0,plotW+RP,H);ctx.clip();
     const ys=[];rows.forEach(r=>{if(r.grp!==lg){y+=gap;lg=r.grp}const cy=y+rowH/2;ys.push(cy);y+=rowH;
-      ctx.strokeStyle=r.ecg?cs.ecg:cs.tr;ctx.lineWidth=r.ecg?1:1.05;ctx.beginPath();const k=r.ecg?rowH*.42:ppu;
+      ctx.strokeStyle=r.ecg?cs.ecg:cs.tr;ctx.lineWidth=(r.ecg?1:1.05)*LRN.tw();ctx.beginPath();const k=r.ecg?rowH*.42:ppu;
       for(let n=0;n<N;n++){const px=LBL+n/(N-1)*plotW,py=cy-r.data[n]*k;n?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.stroke()});ctx.restore();
     ctx.textAlign='right';ctx.fillStyle=cs.mu;rows.forEach((r,i)=>{ctx.fillStyle=r.ecg?cs.ecg:cs.mu;ctx.fillText(r.label,LBL-8,ys[i])});
     // scale bar
     let uv=10;for(const c of[10,20,50,100,200,500])if(c*ppu<=24)uv=c;const len=uv*ppu,by=H-8;ctx.strokeStyle=cs.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(LBL+10,by);ctx.lineTo(LBL+10,by-len);ctx.stroke();
     ctx.fillStyle=cs.mu;ctx.textAlign='left';ctx.fillText(uv+' µV',LBL+18,by-len/2);ctx.textAlign='right';ctx.fillText(self.v.sens+' µV/mm · '+self.v.lff+'–'+self.v.hff+' Hz'+(self.v.notch?' · notch':''),cw-RP,H-9);
     // measure
+    (self.marks||[]).forEach(m=>{const x=X(m.t);ctx.strokeStyle=m.c==='ok'?col('--good'):m.c==='no'?col('--bad'):col('--accent');ctx.lineWidth=2;ctx.setLineDash(m.c==='ans'?[2,3]:[]);ctx.beginPath();ctx.moveTo(x,top-6);ctx.lineTo(x,H-FOOT);ctx.stroke();ctx.setLineDash([]);if(m.txt){ctx.fillStyle=ctx.strokeStyle;ctx.textAlign='left';ctx.fillText(m.txt,x+4,H-FOOT+12)}});
     if(self.meas){const[a,b]=self.meas,x0=X(Math.min(a,b)),x1=X(Math.max(a,b));ctx.strokeStyle=cs.mk;ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(x0,top-6);ctx.lineTo(x0,H-FOOT);ctx.moveTo(x1,top-6);ctx.lineTo(x1,H-FOOT);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=cs.mk;ctx.globalAlpha=.08;ctx.fillRect(x0,top-6,x1-x0,H-FOOT-top+6);ctx.globalAlpha=1}
   };
-  const tOf=e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left;return clamp((x-geo.LBL)/geo.plotW*DUR,0,DUR)};
+  self.marks=[];const tOf0=0;const tOf=e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left;return clamp((x-geo.LBL)/geo.plotW*DUR,0,DUR)};
   const show=()=>{if(!self.meas)return;const d=Math.abs(self.meas[1]-self.meas[0]);read.textContent=d<.005?'':`Δt ${(d*1000).toFixed(0)} ms  ·  ${(1/d).toFixed(1)} Hz`};
   let dragging=false;
   cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&false)return;dragging=true;const t=tOf(e);self.meas=[t,t];try{cv.setPointerCapture(e.pointerId)}catch(_){}self.draw();show()});
   cv.addEventListener('pointermove',e=>{if(!dragging)return;self.meas[1]=tOf(e);self.draw();show()});
-  cv.addEventListener('pointerup',()=>{dragging=false;if(self.meas&&Math.abs(self.meas[1]-self.meas[0])<.02){self.meas=null;read.innerHTML='&nbsp;';self.draw()}});
+  cv.addEventListener('pointerup',e=>{dragging=false;if(self.meas&&Math.abs(self.meas[1]-self.meas[0])<.02){const t=self.meas[0];self.meas=null;read.innerHTML='&nbsp;';if(self.pick){self.pick(t);return}self.draw()}});
   cv.addEventListener('dblclick',()=>{self.meas=null;read.innerHTML='&nbsp;';self.draw()});
   new ResizeObserver(()=>self.draw()).observe(sc);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>setTimeout(self.draw,30));

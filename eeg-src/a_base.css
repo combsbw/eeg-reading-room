@@ -135,3 +135,8 @@ tbody tr[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,var
 @media (max-width:860px){.two,.atlas{grid-template-columns:1fr}.plist{max-height:none;flex-direction:row;flex-wrap:wrap}.plist h3{width:100%}}
 @media (max-width:560px){.qgrid{grid-template-columns:1fr}.bar{grid-template-columns:84px 1fr 70px}h1{font-size:22px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.pill.epi{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.pill.pdra{color:var(--mark);border-color:color-mix(in srgb,var(--mark) 45%,var(--line))}
+.pill.enc{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.pill.coma{color:var(--ink);border-color:var(--muted)}
+.pill.neo{color:var(--good);border-color:color-mix(in srgb,var(--good) 30%,var(--line))}

@@ -20,22 +20,27 @@
   <header class="top">
     <div>
       <h1>EEG Reading Room</h1>
-      <p>Synthetic tracings for training your eye: normal rhythms, benign variants, artifacts and the classic abnormal patterns. Every example is redrawn with new timing and sides.</p>
+      <p>Synthetic EEG built from the physiology up: rhythms, variants, artifacts, epilepsy, ICU patterns in ACNS terms, encephalopathy, coma and the neonate, with trends that evolve over hours. Every example is redrawn with new timing and sides.</p>
       <!--SISTER-->
     </div>
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="true">Quiz</button>
+      <button role="tab" id="tb-path" data-tab="path" aria-selected="true">Path</button>
+      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="false">Quiz</button>
       <button role="tab" id="tb-atlas" data-tab="atlas" aria-selected="false">Atlas</button>
       <button role="tab" id="tb-dash" data-tab="dash" aria-selected="false">Dashboard</button>
     </nav>
   </header>
 
   <!-- QUIZ -->
-  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz">
+  <section id="tab-path" class="stack" role="tabpanel" aria-labelledby="tb-path"></section>
+
+  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz" hidden>
     <div class="card stack" id="qSetup">
       <div class="row">
         <div class="row"><span class="lbl">Mode</span>
-          <div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (10)</button></div></div>
+          <div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (15)</button></div></div>
+        <div class="row"><span class="lbl">Questions</span>
+          <div class="seg" id="segType" style="flex-wrap:wrap"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="desc" aria-pressed="false">ACNS terms</button><button data-v="ana" aria-pressed="false">Analysis</button><button data-v="case" aria-pressed="false">Apply</button><button data-v="traj" aria-pressed="false">Trends</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
         <div class="row"><span class="lbl">Difficulty</span>
           <div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
       </div>
@@ -61,8 +66,8 @@
     </div>
 
     <div id="qIntro" class="card">
-      <h2>Pick a mode and press Start</h2>
-      <p style="margin-top:6px;color:var(--muted);max-width:70ch">Practice shows an explanation after every answer and adapts to the patterns you miss. Exam runs ten different patterns and shows the review at the end. You can change montage, sensitivity and filters on any tracing, and drag across it to measure time and frequency.</p>
+      <h2>Free practice</h2>
+      <p style="margin-top:6px;color:var(--muted);max-width:70ch">Practice shows an explanation after every answer and adapts to the patterns you miss. Exam runs fifteen mixed questions and shows the review at the end. For a structured route from mechanism to mastery, use the <b>Path</b> tab. Change montage, sensitivity and filters on any tracing, and drag across it to measure time and frequency.</p>
     </div>
 
     <div id="qStage" class="stack" hidden>
@@ -77,9 +82,10 @@
 
   <!-- ATLAS -->
   <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
-    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="rhy" aria-pressed="false">Rhythms</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; montages</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
+    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="evo" aria-pressed="false">Trends &amp; evolution</button><button type="button" data-sub="mech" aria-pressed="false">Mechanism labs</button><button type="button" data-sub="rhy" aria-pressed="false">Rhythms</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; montages</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
     <div class="atlas" id="aPat">
-      <div class="card"><div class="plist" id="aList"></div></div>
+      <div class="card plcard"><div class="plist" id="aList"></div></div>
+      <label class="msel lbl">Pattern <select id="aSel"></select></label>
       <div class="stack" style="min-width:0">
         <div class="row" style="justify-content:space-between">
           <div class="row" style="gap:12px"><h2 id="aName"></h2><span class="pill" id="aCat"></span></div>
@@ -89,9 +95,12 @@
           </div>
         </div>
         <div id="aViewer"></div>
+        <div class="card stack" id="aWhy" hidden></div>
         <div class="card two" id="aInfo"></div>
       </div>
     </div>
+    <div class="stack" id="aEvo" hidden></div>
+    <div class="stack" id="aMech" hidden></div>
     <div class="stack" id="aRhy" hidden></div>
     <div class="stack" id="aLead" hidden></div>
     <div class="stack" id="aSig" hidden></div>

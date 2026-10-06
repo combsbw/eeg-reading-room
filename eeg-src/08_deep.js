@@ -310,12 +310,3 @@ function aliasLab(H){const st={f:70,fs:128};
   AX.sigDraw.push(draw)}
 
 /* ---- atlas sub-navigation ---- */
-const SUBS={rhy:buildRhy,lead:buildLead,sig:buildSig},SID={pat:'#aPat',rhy:'#aRhy',lead:'#aLead',sig:'#aSig'};
-function redrawSub(){if(AX.cur==='pat'){aViewer.draw();return}(AX.draws[AX.cur]||[]).forEach(f=>f())}
-function setSub(s){AX.cur=s;$$('#aSub button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sub===s)));Object.keys(SID).forEach(k=>$(SID[k]).hidden=k!==s);
-  if(s!=='pat'&&!AX.built[s]){AX.built[s]=1;SUBS[s]()}if(s==='pat'&&!aCur)showAtlas('awake');redrawSub()}
-$$('#aSub button').forEach(b=>b.addEventListener('click',()=>setSub(b.dataset.sub)));
-let rzT=0;const rzF=()=>{cancelAnimationFrame(rzT);rzT=requestAnimationFrame(()=>{if(!$('#tab-atlas').hidden)redrawSub()})};
-if(window.ResizeObserver)new ResizeObserver(rzF).observe($('#tab-atlas'));window.addEventListener('resize',rzF);
-try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',rzF)}catch(_){}
-

@@ -6,7 +6,8 @@ function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.le
   const tiles=`<div class="tiles"><div class="card tile"><div class="lbl">Answered</div><div class="n">${tot}</div><div class="s">${(DB.exams||[]).length} ${(DB.exams||[]).length===1?'exam':'exams'} taken</div></div>
   <div class="card tile"><div class="lbl">Accuracy</div><div class="n">${tot?pct(ok,tot)+'%':'–'}</div><div class="s">${unaided.length?`${pct(uok,unaided.length)}% without hints`:'no answers yet'}</div></div>
   <div class="card tile"><div class="lbl">Best streak</div><div class="n">${DB.best||0}</div><div class="s">in a row, practice mode</div></div>
-  <div class="card tile"><div class="lbl">Localization</div><div class="n">${locs.length?pct(lok,locs.length)+'%':'–'}</div><div class="s">${locs.length} localization answers</div></div></div>`;
+  <div class="card tile"><div class="lbl">Localization</div><div class="n">${locs.length?pct(lok,locs.length)+'%':'–'}</div><div class="s">${locs.length} side, field and event answers</div></div>
+  ${[['mech','Mechanism','why and integration'],['desc','ACNS terms','descriptor builds'],['bgr','Background read','structured reads'],['meas','Measurement','frequency answers'],['q2','Apply','significance and follow-ups'],['traj','Trends','evolution and trend answers']].map(([k,t,d])=>{const x=DB[k]||[],o=x.filter(a=>a.ok).length;return`<div class="card tile"><div class="lbl">${t}</div><div class="n">${x.length?pct(o,x.length)+'%':'–'}</div><div class="s">${x.length} ${d}</div></div>`}).join('')}</div>`;
   // trend
   let trend='';if(tot>=4){const w=10,pts=[];for(let i=0;i<tot;i++){const s=A.slice(Math.max(0,i-w+1),i+1);pts.push(s.filter(a=>a.ok).length/s.length)}
     const W_=640,H_=140,pl=34,pb=22,pt=10,pr=10,x=i=>pl+(tot>1?i/(tot-1):0)*(W_-pl-pr),y=v=>pt+(1-v)*(H_-pt-pb);
@@ -27,5 +28,5 @@ function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.le
   d.innerHTML=tiles+`<div class="two">${bars}${weakH}</div>`+trend+heat+`<div class="two">${confH}${exH||'<div></div>'}</div><div class="row"><button class="btn small" id="resetBtn" type="button">Reset progress</button><span id="resetMsg" class="lbl"></span></div>`;
   $$('[data-open]',d).forEach(b=>b.addEventListener('click',()=>openAtlas(b.dataset.open)));
   const db=$('#drillBtn',d);if(db)db.addEventListener('click',()=>{setDrill(weak.map(w=>w.p.id));setTab('quiz')});
-  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],locs:[],exams:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
+  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){const keep={set:DB.set||{},role:DB.role};DB=store.load();LISTS.forEach(k=>DB[k]=[]);DB.path={};DB.srs={};DB.best=0;Object.assign(DB,keep);store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
 

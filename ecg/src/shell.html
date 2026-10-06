@@ -79,7 +79,7 @@
 
   <!-- ATLAS -->
   <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
-    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="evo" aria-pressed="false">Evolution</button><button type="button" data-sub="mech" aria-pressed="false">Mechanisms</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
+    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="evo" aria-pressed="false">Evolution</button><button type="button" data-sub="mech" aria-pressed="false">Mechanisms</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button><button type="button" data-sub="hrv" aria-pressed="false">HRV biofeedback</button><button type="button" data-sub="case" aria-pressed="false">Brain &amp; heart case</button></div></div>
     <div class="atlas" id="aPat">
       <div class="card plcard"><div class="plist" id="aList"></div></div>
       <label class="msel lbl">Pattern <select id="aSel"></select></label>
@@ -97,6 +97,8 @@
       </div>
     </div>
     <div class="stack" id="aEvo" hidden></div>
+    <div class="stack" id="aHrv" hidden></div>
+    <div class="stack" id="aCase" hidden></div>
     <div class="stack" id="aMech" hidden></div>
     <div class="stack" id="aSys" hidden></div>
     <div class="stack" id="aLead" hidden></div>

@@ -26,10 +26,10 @@ function composeRec(st,seed,o={}){const r=mkRand((seed>>>0)+13),R=newRec(),e=mak
   if(st.supp>.02){const bursts=[];let t=r.r(0,1);const burst=Math.max(.6,(1-st.supp)*3.2),gap=burst*st.supp/(1-st.supp+.02);while(t<DUR){const d=burst*r.r(.8,1.2);bursts.push([t,Math.min(DUR,t+d)]);t+=d+gap*r.r(.8,1.2)}
     const bw=wind(bursts,.14);for(let k=0;k<NE;k++){const V=R.V[k];for(let n=0;n<N;n++)V[n]*=.06+.94*bw[n]}
     if(st.ident){const tpl=EL.map(()=>identBurst(r,1));for(const[a]of bursts){const i0=Math.floor(a*FS);for(let k=0;k<NE;k++){const V=R.V[k],b=tpl[k];for(let j=0;j<b.length&&i0+j<N;j++)V[i0+j]+=b[j]*55}}}
-    else addBand(R,r,W.all.map((x,i)=>.5+.5*W.fc[i]),1,4,30,bw);R.bursts=bursts}
+    else addBand(R,r,W.all.map((x,i)=>.5+.5*W.fc[i]),1,4,40*Math.max(.25,v),bw);R.bursts=bursts}
   if(o.stim){const ts=4.5;stim(R,ts);if(st.react){const post=wind([[ts+.3,DUR+1]],.3);addBand(R,r,W.all,13,25,6,post);for(let k=0;k<NE;k++){const V=R.V[k];for(let n=Math.floor((ts+.3)*FS);n<N;n++)V[n]*=.75}}}
   if(st.art==='muscle')addBand(R,r,blob(-.9,.1,.42).map((x,i)=>x+blob(.9,.1,.42)[i]),28,90,20,waxwane(r,.6,[1,2]));
-  R.sens=v<.3?3:st.supp>.5?10:v<.5?5:st.pd&&st.pd.amp>120?10:7;
+  R.sens=st.supp>.5?(v<.4?5:10):v<.3?3:v<.5?5:st.pd&&st.pd.amp>120?10:7;
   R.meta={pdr:st.pdr>0&&st.alpha>3?st.pdr:null,cont:st.supp>.99?'supp':st.supp>=.5?'bs':st.supp>=.1?'discont':'cont',volt:v<.35?'supp':v<.6?'low':'normal',sym:st.asym>.45?'marked':st.asym>.2?'mild':'sym',react:o.stim?(st.react?'yes':'no'):null,state:st.state};
   R._c={};R.pid=null;return R}
 /* ---- trend metrics from a state (analytic spectra, so hours compute instantly) ---- */

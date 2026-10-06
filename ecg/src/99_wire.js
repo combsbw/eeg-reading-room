@@ -1,8 +1,8 @@
 /* ============ tabs & atlas sub-sections ============ */
-const SUBS={evo:buildEvo,mech:buildMech,sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig},SID={pat:'#aPat',evo:'#aEvo',mech:'#aMech',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig'};
+const SUBS={evo:buildEvo,mech:buildMech,sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig,hrv:h=>buildHrv(h||$('#aHrv')),case:h=>buildCase(h||$('#aCase'))},SID={pat:'#aPat',evo:'#aEvo',mech:'#aMech',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig',hrv:'#aHrv',case:'#aCase'};
 function redrawSub(){if(AX.cur==='pat'){aViewer.draw();return}(AX.draws[AX.cur]||[]).forEach(f=>f())}
 function setSub(s){AX.cur=s;$$('#aSub button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sub===s)));Object.keys(SID).forEach(k=>$(SID[k]).hidden=k!==s);
-  if(s!=='pat'&&!AX.built[s]){AX.built[s]=1;SUBS[s]()}if(s==='pat'&&!aCur)showAtlas('nsr');redrawSub()}
+  if(s!=='pat'&&!AX.built[s]){AX.built[s]=1;SUBS[s]($(SID[s]))}if(s==='pat'&&!aCur)showAtlas('nsr');redrawSub()}
 $$('#aSub button').forEach(b=>b.addEventListener('click',()=>setSub(b.dataset.sub)));
 let rzT=0;const rzF=()=>{cancelAnimationFrame(rzT);rzT=requestAnimationFrame(()=>{if(!$('#tab-atlas').hidden)redrawSub()})};
 if(window.ResizeObserver)new ResizeObserver(rzF).observe($('#tab-atlas'));window.addEventListener('resize',rzF);

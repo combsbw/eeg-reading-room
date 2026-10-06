@@ -83,5 +83,6 @@ const LCFG={app:'eeg',key:'eegrr.v1',other:{key:'ecgrr.v1',name:'ECG Reading Roo
  timeout:q=>{if(q.chosen!==null&&q.chosen!==undefined)return;if(q.kind==='dx'||q.kind==='loc')choose('__timeout__');else if(q.kind==='desc'||q.kind==='bg')choose('done');else if((q.kind==='traj'||q.kind==='trend')&&q.tt==='seq')choose([]);else choose(-1)},
  showResult:(html,cb)=>{setTab('quiz');S.q=null;$('#qIntro').hidden=true;$('#qStage').hidden=false;$('#qViewer').hidden=true;$('#qMeta').hidden=true;const c=$('#qCard');c.innerHTML=html;$$('[data-lrn]',c).forEach(b=>b.addEventListener('click',()=>{$('#qViewer').hidden=false;$('#qMeta').hidden=false;cb(b.dataset.lrn)}));window.scrollTo({top:0})},
  openPath:mid=>{setTab('path');if(mid){const b=$(`#tab-path [data-mid="${mid}"]`);if(b)b.click()}},openScn:id=>{if(typeof openEvo==='function')openEvo(id)},
+ casePanel:host=>{const v=Viewer(host);return{show:(s,br)=>{const id=s.t<600?'paGood':br==='poor'?'paPoor':'paGood';v.setRec(scnPage(id,s.t,7));v.setAnn(true)},draw:()=>v.draw()}},
  openSection:k=>{if(['field','thal','syn','cbf','map'].includes(k)&&typeof openLab==='function')openLab(k);else if(k==='case'&&typeof openCase==='function')openCase();else{setTab('atlas');setSub(k)}},
  redraw:()=>{if(!$('#tab-path').hidden)LRN.render($('#tab-path'));if(S.q)qViewer.draw();if(!$('#tab-atlas').hidden)redrawSub()}};

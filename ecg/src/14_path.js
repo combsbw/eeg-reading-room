@@ -6,7 +6,8 @@ const TRACKS=[
  {id:'C',name:'Coronary flow and ischemia',sum:'Supply, injury, occlusion and time.',mods:['supply','omi','evol']},
  {id:'D',name:'Structure, pericardium and genetics',sum:'Mass, load, inflammation and inherited channels.',mods:['mass','genetic','peri']},
  {id:'E',name:'Electrolytes, drugs and temperature',sum:'Systemic changes that move every cell at once.',mods:['k','camg','qt','tox','temp']},
- {id:'F',name:'Technical and synthesis',sum:'Trust the signal, then put it all together.',mods:['tech','synth']}];
+ {id:'F',name:'Technical and synthesis',sum:'Trust the signal, then put it all together.',mods:['tech','synth']},
+ {id:'G',name:'Integration: heart and brain',sum:'Shared ions, oxygen, temperature and nerves.',mods:['neuro']}];
 const MODS={
  found:{name:'Action potential to surface ECG',sum:'Ion currents in each phase become P, QRS, ST and T.',intro:'The surface ECG is the voltage difference between cells that are at different phases of their action potentials. Phase 0 sodium entry writes the QRS, the calcium plateau the ST segment, potassium-driven phase 3 the T wave, and phase 4 in pacemaker cells sets the rate.',
   con:['restK','naAvail','plateau','repol','disp','seq','auto','autonom'],pats:['nsr','sarr','sbrady','stach','erp','athlete','child'],labs:[['ap','Action potential lab'],['rate','Rate & intervals']]},
@@ -48,10 +49,12 @@ const MODS={
   con:['temp','ito','auto'],pats:['hypothermia'],scn:['hypothermiaCourse']},
  tech:{name:'Signal, artifact and lead errors',sum:'Know when the tracing is lying.',intro:'Before any diagnosis, confirm the signal: electrode placement, reversal, filters and artifact. Most errors are predictable from Einthoven’s triangle and from the frequency content of noise versus cardiac signals.',
   con:['artifact','position'],pats:['artifact','tremor','cpr','lrrev','lallrev','rarl','vswap','v1v2high'],labs:[['sig','Signal & filters'],['lead','Leads & axis']]},
+ neuro:{name:'Heart and brain',sum:'Autonomic coupling, shared ions and the post-arrest patient.',intro:'The same ions, oxygen supply, temperature and autonomic nerves link the ECG and the EEG. Brain injury floods the heart with catecholamines (deep T inversion, long QT, takotsubo); seizures speed or stop the heart; potassium, cold and Na⁺-channel toxins change both tracings; cardiac arrest starves the brain within seconds. Resonance breathing shows the vagal brainstem–heart loop in real time.',
+  con:['catechol','autonom','restK','temp','naBlock','ikrBlock'],pats:['cerebralT','takotsubo','hypothermia','hyperk','tca','lqt','sbrady','stach','sarr'],scn:['hypothermiaCourse','tcaOD','hyperK','takoCourse'],labs:[['case','Post-arrest case (both tracings)'],['hrv','HRV biofeedback']]},
  synth:{name:'Putting it together',sum:'Every module, mixed, timed and evolving.',intro:'The capstone draws from every module: mixed diagnoses, measurements, mechanisms, decisions and evolution. It reflects how tracings arrive in practice: unlabeled, sometimes evolving, and needing a reason as well as a name.',
   con:['seq','injury','restK','reentry','naBlock'],pats:[],scn:[],labs:[['sys','Systematic read']]}};
-MODS.synth.pats=[...new Set(Object.values(MODS).flatMap(m=>m.pats||[]))];MODS.synth.scn=[...SCNL];
-const CORE={student:null,ems:['found','leads','auto','av','narrow','wide','pace','supply','omi','evol','k','tox','tech','synth'],icu:['found','leads','auto','av','ivc','narrow','wide','pace','supply','omi','evol','k','camg','qt','tox','temp','tech','synth'],tech:['found','leads','auto','av','ivc','narrow','wide','pace','supply','mass','tech','synth'],clin:null};
+MODS.synth.pats=[...new Set(Object.values(MODS).filter(m=>m!==MODS.synth).flatMap(m=>m.pats||[]))];MODS.synth.scn=[...SCNL];
+const CORE={student:null,ems:['found','leads','auto','av','narrow','wide','pace','supply','omi','evol','k','tox','tech','synth'],icu:['found','leads','auto','av','ivc','narrow','wide','pace','supply','omi','evol','k','camg','qt','tox','temp','tech','synth','neuro'],tech:['found','leads','auto','av','ivc','narrow','wide','pace','supply','mass','tech','synth'],clin:null};
 
 /* ---- application questions: what the finding means for the patient ---- */
 function caseQ(pid,seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+29),rec=generate(pid,seed),p=PM[pid];
@@ -100,5 +103,6 @@ const LCFG={app:'ecg',key:'ecgrr.v1',other:{key:'eegrr.v1',name:'EEG Reading Roo
  timeout:q=>{if(q.chosen!==null&&q.chosen!==undefined)return;if(q.kind==='dx')choose('__timeout__');else if(q.kind==='traj'&&q.tt==='seq')choose([]);else choose(-1)},
  showResult:(html,cb)=>{setTab('quiz');S.q=null;$('#qIntro').hidden=true;$('#qStage').hidden=false;$('#qViewer').hidden=true;$('#qMeta').hidden=true;const c=$('#qCard');c.innerHTML=html;$$('[data-lrn]',c).forEach(b=>b.addEventListener('click',()=>{$('#qViewer').hidden=false;$('#qMeta').hidden=false;cb(b.dataset.lrn)}));window.scrollTo({top:0})},
  openPath:mid=>{setTab('path');if(mid){const b=$(`#tab-path [data-mid="${mid}"]`);if(b)b.click()}},openScn:id=>openEvo(id,1),
+ casePanel:host=>{const v=Viewer(host);let s0=null;return{show:s=>{s0=s;v.setRec(generate(s.ecg,7));v.setAnn(true)},draw:()=>v.draw()}},
  openSection:k=>{if(['ap','cond','cor'].includes(k))openLab(k);else{setTab('atlas');setSub(k)}},
  redraw:()=>{if(!$('#tab-path').hidden)LRN.render($('#tab-path'));if(S.q)qViewer.draw();if(!$('#tab-atlas').hidden)redrawSub()}};

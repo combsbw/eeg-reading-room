@@ -36,6 +36,22 @@ The tracings are computer-generated teaching models, not patient recordings. Rea
 - **Leads & montages**: interactive 10–20 map (what each electrode looks at), step-by-step placement and measurement, Input 1 / Input 2 for every channel in five montages, and a polarity lab for phase reversals.
 - **Signal & filters**: measurement chain, differential amplification and impedance mismatch, low/high-frequency and notch filters with response curve, an RC circuit lab (time constant, corner frequency, integrator/differentiator) and a sampling/aliasing demo.
 
+
+## Learning path (both apps)
+
+Each app opens on **Path**: tracks of modules, each run through six stages — Mechanism, Recognize, Analyze, Apply, Integrate, Master (timed, cumulative). Wrong answers return through spaced repetition. Role presets (student, EMS/flight, critical care, technologist, physician/APP) reorder the core modules. Settings: theme, colour-vision-safe palette, tracing weight, reduced motion, progress export/import.
+
+## EEG Reading Room (v3)
+
+- **83 patterns** in 8 categories: normal/sleep/age, benign variants, artifacts (incl. ICU: ventilator, IV drip, pulse, sweat), epilepsy syndromes, ACNS periodic/rhythmic patterns (LPD/GPD/BIPD/LRDA/GRDA/SW, +F/+S, SIRPIDs, BIRDs), encephalopathy and drugs, coma and post-arrest categories, neonatal.
+- **Mechanism layer**: a concept graph (synapses, thalamocortical circuits, blood flow, fields, state and drugs) attached to every pattern.
+- **Question types**: diagnosis, mechanism/integration, ACNS descriptor builder, field-maximum localization on a head map, find-the-event on the tracing, structured background read, frequency measurement, application, trajectories.
+- **Trends & evolution**: CSA, aEEG, rhythmicity, alpha/delta ratio, asymmetry and BSR computed from the same brain state that draws each raw page; 10 scenarios (status epilepticus, post-arrest good/poor, SAH ischemia, sedation titration, hepatic, hypoglycemia, raised ICP, deep hypothermia, a normal night).
+- **Mechanism labs**: dipoles and scalp fields, thalamocortical modes, a Jansen–Rit excitation/inhibition model with drugs, blood flow and autoregulation, regions and semiology.
+- **Brain & heart case** (also in the ECG app), **neurofeedback simulator**, and **Open a recording** (EDF/EDF+/BDF read locally, with a CSA trend).
+
+The ECG app adds a **Heart and brain** module and an **HRV resonance-breathing** trainer (simulated, or a Bluetooth heart-rate strap where the browser supports it).
+
 ## ECG Reading Room (`/ecg/`)
 
 A sister app for 12-lead ECG interpretation, installable and offline on its own at `ecg/`.

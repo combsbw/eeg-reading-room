@@ -29,3 +29,5 @@ svg.head .el.ans circle{stroke:var(--good);stroke-width:2}svg.head .el.wrong cir
 .labg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
 @media (max-width:860px){.labg{grid-template-columns:1fr}}
 svg .rg{cursor:pointer}svg .rg:focus{outline:none}svg .rg:hover circle,svg .rg:focus circle{stroke:var(--accent)}
+.nfbrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}
+@media (max-width:520px){.nfbrow{grid-template-columns:1fr}.nfbrow canvas.nfv{margin:0 auto}}

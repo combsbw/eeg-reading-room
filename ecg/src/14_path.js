@@ -69,15 +69,15 @@ function mechQ(pid,type,seed){seed=seed??Math.floor(Math.random()*1e9);const r=m
 
 /* ---- stage question makers ---- */
 function pickItem(list,prefix,used){const d=LRN&&DB.srs?DB.srs:{},t=Date.now();const w=list.map(x=>{const it=d[prefix+x];let v=it?(it.b<2?3:it.due<=t?2:1/(1+it.b)):2.5;if(used&&used.has(x))v*=.08;return v});let s=w.reduce((a,b)=>a+b,0)*Math.random();for(let i=0;i<list.length;i++){s-=w[i];if(s<=0)return list[i]}return list[0]}
-function anaQ(pid,r){const kinds=['meas','meas'];if(typeof leadQ==='function'&&leadQ.can(pid))kinds.push('lead','lead');if(typeof wctQ==='function'&&wctQ.can(pid))kinds.push('wct','wct');const k=kinds[Math.floor(r.u()*kinds.length)];
-  if(k==='lead'){const q=leadQ(pid);if(q)return q}if(k==='wct'){const q=wctQ(pid);if(q)return q}const q=newQ(pid,'meas');return q.kind==='meas'?q:null}
+function anaQ(pid,r){const kinds=['meas','meas'];if(MODS.tech.pats.includes(pid))kinds.push('alarm');if(typeof leadQ==='function'&&leadQ.can(pid))kinds.push('lead','lead');if(typeof wctQ==='function'&&wctQ.can(pid))kinds.push('wct','wct');const k=kinds[Math.floor(r.u()*kinds.length)];
+  if(k==='alarm'){const q=alarmQ();if(q)return q}if(k==='lead'){const q=leadQ(pid);if(q)return q}if(k==='wct'){const q=wctQ(pid);if(q)return q}const q=newQ(pid,'meas');return q.kind==='meas'?q:null}
 function cumulPats(mid){const all=[...(MODS[mid].pats||[])],d=DB.path||{};Object.keys(MODS).forEach(m=>{if(m!==mid&&m!=='synth'&&d[m]&&d[m].rec&&d[m].rec.done)all.push(...(MODS[m].pats||[]))});return[...new Set(all)]}
 function stageQ(mid,sk,i,sess){const m=MODS[mid],r=mkRand(Date.now()+i*977),used=sess.used||(sess.used=new Set()),pats=m.pats||[],take=(list,pre)=>{const x=pickItem(list,pre,used);used.add(x);return x};
   const withDiff=(d,f)=>{const o=S.diff;S.diff=d;try{return f()}finally{S.diff=o}};
   if(sk==='mech'){for(let k=0;k<6;k++){const q=mechQ(take(pats,'mech:'),'why');if(q)return q}return null}
   if(sk==='rec')return newQ(take(pats,'dx:'),'dx');
   if(sk==='ana'){for(let k=0;k<8;k++){const q=anaQ(take(pats,'meas:'),r);if(q)return q}return newQ(take(pats,'dx:'),'dx')}
-  if(sk==='app')return caseQ(take(pats,'case:'));
+  if(sk==='app'){if(mid==='tech'&&r.u()<.5){const q=alarmQ();if(q)return q}if(r.u()<.35){const q=readQ(take(pats,'read:'));if(q)return q}return caseQ(take(pats,'case:'))}
   if(sk==='int'){const scn=(m.scn||[]),mode=i%3;
     if(mode===0&&scn.length){const s=scn[Math.floor(r.u()*scn.length)];return newTrajQ(Math.floor(Math.random()*1e9),null,s)}
     if(mode<=1){for(let k=0;k<6;k++){const q=mechQ(take(pats,'mech:'),'link');if(q&&q.m.type==='link')return q}}
@@ -87,13 +87,13 @@ function stageQ(mid,sk,i,sess){const m=MODS[mid],r=mkRand(Date.now()+i*977),used
     if(k==='case')return caseQ(pid);if(k==='mech'){const q=mechQ(pid,'why');if(q)return q}if(k==='meas'){const q=newQ(pid,'meas');if(q.kind==='meas')return q}return withDiff('hard',()=>newQ(pid,'dx'))}
   return null}
 function reviewQ(key){const[k,id]=key.split(':');if(k==='traj')return SCN[id]?newTrajQ(Math.floor(Math.random()*1e9),null,id):null;if(!PM[id])return null;
-  if(k==='mech')return mechQ(id,'why')||newQ(id,'dx');if(k==='case')return caseQ(id);if(k==='meas'){const q=newQ(id,'meas');return q}if(k==='lead'&&typeof leadQ==='function'){const q=leadQ(id);if(q)return q}return newQ(id,'dx')}
-const qLabel=q=>{const n=q.pid&&PM[q.pid]?PM[q.pid].name:'';if(q.kind==='traj')return`${TT[q.tt]} · ${q.scn?SCN[q.scn].name:'stable pattern'}`;if(q.kind==='mech')return`${q.m.type==='why'?'Mechanism':'Integration'} · ${n}`;if(q.kind==='meas')return`${MT[q.m.type]} · ${n}`;if(q.kind==='case')return`Apply · ${n}`;if(q.kind==='lead')return`Leads · ${n}`;if(q.kind==='wct')return`Algorithm · ${n}`;return n};
+  if(k==='mech')return mechQ(id,'why')||newQ(id,'dx');if(k==='case')return caseQ(id);if(k==='meas'){const q=newQ(id,'meas');return q}if(k==='lead'){const q=leadQ(id);if(q)return q}if(k==='read'){const q=readQ(id);if(q)return q}return newQ(id,'dx')}
+const qLabel=q=>{const n=q.pid&&PM[q.pid]?PM[q.pid].name:'';if(q.kind==='traj')return`${TT[q.tt]} · ${q.scn?SCN[q.scn].name:'stable pattern'}`;if(q.kind==='mech')return`${q.m.type==='why'?'Mechanism':'Integration'} · ${n}`;if(q.kind==='meas')return`${MT[q.m.type]} · ${n}`;if(q.kind==='case')return`Apply · ${n}`;if(q.kind==='lead')return`Leads · ${n}`;if(q.kind==='wct')return`Algorithm · ${n}`;if(q.kind==='read')return`Structured read · ${n}`;if(q.kind==='alarm')return`Alarm “${q.lab}” · ${q.rec.meta.rhy}`;return n};
 
 /* ---- adapter for the shared path engine ---- */
 const LCFG={app:'ecg',key:'ecgrr.v1',other:{key:'eegrr.v1',name:'EEG Reading Room',href:'../'},tracks:TRACKS,mods:MODS,core:CORE,
  db:()=>DB,save:()=>store.save(DB),patName:id=>PM[id]?PM[id].name:id,scnName:id=>SCN[id]?SCN[id].name:id,conName:c=>CON[c]?CON[c].n:c,conText:c=>CON[c]?CON[c].s:'',conLab:c=>CON[c]&&CON[c].lab,
- keysOf:q=>{if(q.kind==='traj')return q.scn?['traj:'+q.scn]:[];if(!q.pid)return[];return[{dx:'dx',mech:'mech',meas:'meas',case:'case',lead:'lead',wct:'meas'}[q.kind]+':'+q.pid]},
+ keysOf:q=>{if(q.kind==='traj')return q.scn?['traj:'+q.scn]:[];if(!q.pid)return[];return[{dx:'dx',mech:'mech',meas:'meas',case:'case',lead:'lead',wct:'meas',read:'read',alarm:'case'}[q.kind]+':'+q.pid]},
  validKey:k=>{const[a,b]=k.split(':');return a==='traj'?!!SCN[b]:!!PM[b]},label:qLabel,stageQ,reviewQ,
  beginSession:()=>{S.exam=null;S.drill=null;$('#qDrill').hidden=true},
  show:q=>{setTab('quiz');$('#qIntro').hidden=true;$('#qStage').hidden=false;$('#qMeta').hidden=false;showQ(q);window.scrollTo({top:0})},

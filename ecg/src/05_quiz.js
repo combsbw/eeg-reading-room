@@ -7,7 +7,7 @@ let DB=store.load();
 function patStats(){const o={};P.forEach(p=>o[p.id]={n:0,ok:0});DB.answers.forEach(a=>{const s=o[a.pid];if(s){s.n++;if(a.ok)s.ok++}});return o}
 
 /* ============ measurement questions ============ */
-const MT={rate:'Rate',rhythm:'Regularity',axis:'Axis',pr:'PR interval',qrs:'QRS width',qtc:'QTc'};
+const MT={rate:'Rate',rhythm:'Regularity',axis:'Axis',pr:'PR interval',qrs:'QRS width',qtc:'QTc',lead:'Lead selection',wct:'WCT algorithm',read:'Structured read',alarm:'Alarm triage'};
 const near=(v,bs,tol)=>bs.some(b=>Math.abs(v-b)<tol);
 function axisCat(a){return a>=-30&&a<=90?0:a<-30&&a>=-90?1:a>90&&a<=180?2:3}
 function measOptions(R,r){const M=R.meta,no=M.noMeas||[],out=[];
@@ -61,15 +61,15 @@ function options(pid,r){const p=PM[pid],all=P.map(x=>x.id).filter(x=>x!==pid),sa
   else if(S.diff==='easy'){d=[...shuffle(other,r),...shuffle(sameCat,r)];d=d.filter(x=>!sim.includes(x)).concat(d.filter(x=>sim.includes(x)))}
   else d=[...shuffle(sim.slice(0,2),r),...shuffle(sameCat,r),...shuffle(other,r)];
   d=[...new Set(d)].slice(0,3);return shuffle([pid,...d],r)}
-function newQ(pid,kind,seed){seed=seed??Math.floor(Math.random()*1e9);if(kind==='traj')return newTrajQ(seed);const r=mkRand(seed+3),rec=generate(pid,seed);
+function newQ(pid,kind,seed){seed=seed??Math.floor(Math.random()*1e9);if(kind==='traj')return newTrajQ(seed);if(kind==='ana'){const r=mkRand(seed+5),x=r.u();let q=null;if(wctQ.can(pid)&&x<.6)q=wctQ(pid,seed);else if(x<.35&&leadQ.can(pid))q=leadQ(pid,seed);else if(x<.7)q=readQ(pid,seed);else q=alarmQ(seed);if(q)return q;kind='dx'}const r=mkRand(seed+3),rec=generate(pid,seed);
   if(kind==='meas'){const ts=measOptions(rec,r);if(ts.length){const t=ts[Math.floor(r.u()*ts.length)];return{kind,pid,seed,rec,m:makeMeas(rec,t,r),chosen:null,hint:0}}}
   if(kind==='mech'){const m=makeMech(rec,r);if(m)return{kind,pid,seed,rec,m,chosen:null,hint:0}}
   return{kind:'dx',pid,seed,rec,opts:options(pid,r),chosen:null,hint:0,q2c:null}}
-const kindNow=()=>{if(S.qt!=='mix')return S.qt;const x=Math.random();return x<.38?'dx':x<.6?'meas':x<.8?'mech':'traj'};
+const kindNow=()=>{if(S.qt!=='mix')return S.qt;const x=Math.random();return x<.34?'dx':x<.52?'meas':x<.7?'mech':x<.85?'traj':'ana'};
 function setStage(){$('#qIntro').hidden=!!S.q||!!S.exam&&S.exam.done;$('#qStage').hidden=!S.q&&!(S.exam&&S.exam.done)}
-function showQ(q){S.q=q;S.seen.push(q.pid);setStage();if(q.kind==='traj'){$('#qViewer').hidden=true}else{$('#qViewer').hidden=false;qViewer.setRec(q.rec);qViewer.setAnn(false)}$('#qAnn').checked=false;renderCard()}
-const isOk=q=>q.kind==='traj'?trajOk(q):q.kind==='dx'?q.chosen===q.pid:q.chosen===q.m.a;
-function recordAnswer(q,mode){const ok=isOk(q);if(q.kind==='case')DB.q2.push({pid:q.pid,ok,ts:Date.now(),c:1});else if(q.kind==='traj')DB.traj.push({scn:q.scn||q.pid,tt:q.tt,ok,m:mode,ts:Date.now()});else if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else if(q.kind==='mech')DB.mech.push({pid:q.pid,t:q.m.type,c:q.m.c,ok,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
+function showQ(q){S.q=q;S.seen.push(q.pid);setStage();if(q.kind==='traj'||q.kind==='alarm'){$('#qViewer').hidden=true}else{$('#qViewer').hidden=false;qViewer.setRec(q.rec);qViewer.setAnn(false)}$('#qAnn').checked=false;renderCard()}
+const isOk=q=>q.kind==='traj'?trajOk(q):['lead','read','wct','alarm'].includes(q.kind)?extraOk(q):q.kind==='dx'?q.chosen===q.pid:q.chosen===q.m.a;
+function recordAnswer(q,mode){const ok=isOk(q);if(['lead','read','wct','alarm'].includes(q.kind))DB.meas.push({pid:q.pid,t:q.kind,ok,m:mode,ts:Date.now()});else if(q.kind==='case')DB.q2.push({pid:q.pid,ok,ts:Date.now(),c:1});else if(q.kind==='traj')DB.traj.push({scn:q.scn||q.pid,tt:q.tt,ok,m:mode,ts:Date.now()});else if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else if(q.kind==='mech')DB.mech.push({pid:q.pid,t:q.m.type,c:q.m.c,ok,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
   if(mode==='practice'){S.streak=ok?S.streak+1:0;DB.best=Math.max(DB.best||0,S.streak)}store.save(DB);LRN.record(q,ok);return ok}
 function startQuiz(){S.streak=0;S.seen=[];if(S.mode==='exam'){const st=patStats(),r=mkRand(Date.now()),pl=pool();let ids=pl.map(p=>({id:p.id,w:(st[p.id].n?1+2*(1-st[p.id].ok/st[p.id].n):2)*r.u()})).sort((a,b)=>b.w-a.w).slice(0,Math.min(15,pl.length)).map(x=>x.id);
     while(ids.length<15)ids.push(pl[Math.floor(r.u()*pl.length)].id);ids=shuffle(ids,r);S.exam={qs:ids.map(id=>newQ(id,kindNow())),i:0,done:false};showQ(S.exam.qs[0])}

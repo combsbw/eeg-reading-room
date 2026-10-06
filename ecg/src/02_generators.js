@@ -121,7 +121,7 @@ GEN.fcap=R=>{const r=R.r,hr=r.r(60,72),iv=60/hr,esc=r.r(1.5,1.8),vm=pacedM(r),na
 /* ---- ischemia & infarction ---- */
 GEN.antstemi=R=>{const r=R.r,hr=r.r(75,105),pr=r.r(.13,.17),qt=qtF(hr,.42),vm=V({axis:r.r(30,70),amp:r.r(.9,1.1),qt,sep:0,xq:[{c:.02,wl:.01,A:.32,d:nrm([-.15,.1,-.95])}],stA:r.r(.26,.34),std:nrm([.45,-.42,.8]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.52,d:nrm([.35,-.15,.9])}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
-GEN.infstemi=R=>{const r=R.r,hr=r.r(52,78),pr=r.r(.15,.21),qt=qtF(hr,.42),vm=V({axis:r.r(55,80),qt,xq:[{c:.018,wl:.009,A:.24,d:nrm([.1,-1,.1])}],stA:r.r(.26,.34),std:nrm([-.22,1,-.05]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.5,d:nrm([-.05,1,.5])}]}),pm=nP(r);
+GEN.infstemi=R=>{const r=R.r,hr=r.r(52,78),pr=r.r(.15,.21),qt=qtF(hr,.42),vm=V({axis:r.r(55,80),qt,xq:[{c:.018,wl:.009,A:.24,d:nrm([.1,-1,.1])}],stA:r.r(.26,.34),std:nrm([-.14,1,-.2]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.5,d:nrm([-.05,1,.5])}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
 GEN.latstemi=R=>{const r=R.r,hr=r.r(70,100),pr=r.r(.13,.17),qt=qtF(hr,.42),vm=V({axis:r.r(25,55),qt,stA:r.r(.24,.3),std:nrm([.85,-.5,-.25]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.5,d:nrm([.8,-.3,.25])}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};

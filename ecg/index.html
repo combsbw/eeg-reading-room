@@ -213,6 +213,25 @@ details summary{margin-top:4px}
 .tpl{font-weight:700;font-family:var(--font-mono);display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft)}
 .tphead .tpfull{margin-left:auto}
 .qgrid.long{grid-template-columns:1fr}
+.lgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-width:560px}
+.lbtn{border:2px solid var(--line);background:var(--panel);border-radius:8px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.lbtn b{font-size:15px}.lbtn span{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.lbtn.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
+.lbtn.hit{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%,var(--panel))}
+.lbtn.miss{border-color:var(--mark);border-style:dashed}
+.lbtn.extra{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--panel))}
+.lk{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:2px solid var(--line)}
+.lk.hit{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%,var(--panel))}.lk.miss{border-color:var(--mark);border-style:dashed}.lk.extra{border-color:var(--bad)}
+.wsteps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:12px}.wsteps li{line-height:1.45}
+.wok,.wno{margin-top:4px;padding:4px 8px;border-radius:6px;font-size:13px}.wok{background:color-mix(in srgb,var(--good) 14%,var(--panel))}.wno{background:color-mix(in srgb,var(--bad) 12%,var(--panel))}
+.rform{display:flex;flex-direction:column;gap:8px}
+.rrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;align-items:center}
+.rrow .seg{flex-wrap:wrap}.rrow .seg.rdx{display:grid;grid-template-columns:1fr 1fr}
+.rrow .seg button.rk-ok{background:color-mix(in srgb,var(--good) 22%,var(--panel));color:var(--ink)}.rrow .seg button.rk-no{background:color-mix(in srgb,var(--bad) 16%,var(--panel));color:var(--ink)}
+.alarm{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+.abadge{background:var(--bad);color:#fff;font-weight:700;font-family:var(--font-mono);letter-spacing:.06em;padding:6px 12px;border-radius:6px;animation:ablink 1s steps(2) infinite}
+@keyframes ablink{50%{opacity:.55}}
+@media (max-width:560px){.rrow{grid-template-columns:1fr}.rrow .seg.rdx{grid-template-columns:1fr}}
 
 /* ---- learning path ---- */
 .lring{--p:0;display:inline-grid;place-items:center;border-radius:50%;flex:none;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--soft) 0);position:relative;font-family:var(--font-mono);font-size:11px}
@@ -273,7 +292,7 @@ details summary{margin-top:4px}
     <div class="card stack" id="qSetup">
       <div class="row">
         <div class="row"><span class="lbl">Mode</span><div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (15)</button></div></div>
-        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="traj" aria-pressed="false">Evolution</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
+        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="traj" aria-pressed="false">Evolution</button><button data-v="ana" aria-pressed="false">Analysis</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
         <div class="row"><span class="lbl">Difficulty</span><div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
       </div>
       <div class="row" id="catChips"><span class="lbl">Include</span></div>
@@ -382,7 +401,7 @@ function bandNoise(r,f1,f2,rms,len=N){const pad=f1>0&&f1<1.5?4000:300;let x=new 
    Limb leads are Einthoven/Goldberger projections; precordial leads project onto unit
    directions in (mostly) the horizontal plane, each with its own gain (proximity). */
 const LEADS=['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
-const LIMB=LEADS.slice(0,6),PREC=LEADS.slice(6);
+const LIMB=LEADS.slice(0,6),PREC=LEADS.slice(6),XL=['V4R','V7','V8','V9'],ALLL=LEADS.concat(XL);
 const LG=.85;
 const PV={V1:{d:nrm([-.32,.12,.94]),g:1.05},V2:{d:nrm([-.05,.12,1]),g:1.45},V3:{d:nrm([.35,.12,.93]),g:1.45},V4:{d:nrm([.7,.15,.7]),g:1.35},V5:{d:nrm([.93,.12,.36]),g:1.15},V6:{d:nrm([1,.1,.05]),g:.95},
   V4R:{d:nrm([-.75,.15,.62]),g:.9},V7:{d:nrm([.8,.1,-.6]),g:.7},V8:{d:nrm([.45,.1,-.9]),g:.6},V9:{d:nrm([.1,.1,-1]),g:.55}};
@@ -450,16 +469,17 @@ function deriveLeads(R,noise=true){const n=R.n,X=R.v[0],Y=R.v[1],Z=R.v[2],mx=R.o
   for(let i=0;i<n;i++){const x=X[i]*mx,I=LG*x,II=LG*(.5*x+.866*Y[i]);RA[i]=-(I+II)/3;LA[i]=(2*I-II)/3;LL[i]=(2*II-I)/3}
   const pv=R.opt.pv||{},pg=R.opt.pg||[1,1,1,1,1,1];
   PREC.forEach((k,j)=>{const d=pv[k]||PV[k].d,g=PV[k].g*pg[j],a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=g*(d[0]*X[i]*mx+d[1]*Y[i]+d[2]*Z[i]);L[k]=a});
+  XL.forEach(k=>{const d=PV[k].d,g=PV[k].g,a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=g*(d[0]*X[i]*mx+d[1]*Y[i]+d[2]*Z[i]);L[k]=a});
   const E={RA,LA,LL};if(R.ela.RA)for(let i=0;i<n;i++)RA[i]+=R.ela.RA[i];if(R.ela.LA)for(let i=0;i<n;i++)LA[i]+=R.ela.LA[i];if(R.ela.LL)for(let i=0;i<n;i++)LL[i]+=R.ela.LL[i];
   const inp={RA,LA,LL};if(R.opt.swap){const[a,b]=R.opt.swap,src=k=>k==='RL'?LL:E[k];if(a!=='RL')inp[a]=src(b);if(b!=='RL')inp[b]=src(a)}
   const ra=inp.RA,la=inp.LA,ll=inp.LL,I=new Float32Array(n),II=new Float32Array(n),III=new Float32Array(n),aVR=new Float32Array(n),aVL=new Float32Array(n),aVF=new Float32Array(n);
   for(let i=0;i<n;i++){I[i]=la[i]-ra[i];II[i]=ll[i]-ra[i];III[i]=ll[i]-la[i];aVR[i]=ra[i]-(la[i]+ll[i])/2;aVL[i]=la[i]-(ra[i]+ll[i])/2;aVF[i]=ll[i]-(ra[i]+la[i])/2;
-    const w=(ra[i]+la[i]+ll[i])/3;if(w)PREC.forEach(k=>L[k][i]-=w)}
+    const w=(ra[i]+la[i]+ll[i])/3;if(w){PREC.forEach(k=>L[k][i]-=w);XL.forEach(k=>L[k][i]-=w)}}
   Object.assign(L,{I,II,III,aVR,aVL,aVF});
   for(const k in R.loc)if(L[k]){const a=L[k],b=R.loc[k];for(let i=0;i<n;i++)a[i]+=b[i]}
   if(noise&&R.opt.noise!==0){const r=mkRand(R.seed*7+11),nz=R.opt.noise??1,emg=(R.opt.emg??.009)*nz,wan=(R.opt.wander??.05)*nz;
     const f1=r.r(.16,.3),p1=r.r(0,6.28);
-    LEADS.forEach(k=>{const a=L[k],e=bandNoise(r,25,150,emg),f2=r.r(.3,.7),p2=r.r(0,6.28),a1=wan*r.r(.3,1),a2=wan*r.r(.1,.4),a3=r.r(.001,.003);
+    ALLL.forEach(k=>{const a=L[k],e=bandNoise(r,25,150,emg),f2=r.r(.3,.7),p2=r.r(0,6.28),a1=wan*r.r(.3,1),a2=wan*r.r(.1,.4),a3=r.r(.001,.003);
       for(let i=0;i<n;i++){const t=i/FS;a[i]+=e[i]+a1*Math.sin(2*Math.PI*f1*t+p1+(k.length*.7))+a2*Math.sin(2*Math.PI*f2*t+p2)+a3*Math.sin(2*Math.PI*60*t)}})}
   return L}
 
@@ -468,7 +488,7 @@ function template(R){const tm=R.tm;if(!tm)return null;const T=newRec(R.seed,700)
   const t0=.45;if(tm.pm&&tm.pr!=null)tm.pm.forEach(b=>addB(T,t0-tm.pr,b));addV(T,t0,tm.vm);
   const L=deriveLeads(T,false);return{L,t0,vm:tm.vm,pr:tm.pr,n:700}}
 function measure(R){const tp=template(R);if(!tp)return null;const{L,t0,vm}=tp,i0=Math.round((t0+vm.on)*FS),i1=Math.round((t0+vm.off)*FS),ib=Math.max(0,i0-8);
-  const out={};LEADS.forEach(k=>{const a=L[k],b=a[ib];let mx=-9,mn=9,area=0;for(let i=i0;i<=i1;i++){const v=a[i]-b;mx=Math.max(mx,v);mn=Math.min(mn,v);area+=v}
+  const out={};ALLL.forEach(k=>{const a=L[k];if(!a)return;const b=a[ib];let mx=-9,mn=9,area=0;for(let i=i0;i<=i1;i++){const v=a[i]-b;mx=Math.max(mx,v);mn=Math.min(mn,v);area+=v}
     const j=a[i1]-b,st40=a[Math.min(tp.n-1,i1+20)]-b,st60=a[Math.min(tp.n-1,i1+30)]-b,st80=a[Math.min(tp.n-1,i1+40)]-b;let tmax=-9,tmin=9;const te=Math.round((t0+vm.qt)*FS);for(let i=i1+40;i<=Math.min(tp.n-1,te);i++){const v=a[i]-b;tmax=Math.max(tmax,v);tmin=Math.min(tmin,v)}
     let qd=0,qa=0;for(let i=i0;i<=i1;i++){const v=a[i]-b;if(v<-.015){qd++;qa=Math.min(qa,v)}else if(v>.015)break}
     let pa=0,pmin=0;if(tp.pr!=null){const ps=Math.round((t0-tp.pr)*FS);for(let i=Math.max(0,ps);i<i0;i++){pa=Math.max(pa,a[i]-b);pmin=Math.min(pmin,a[i]-b)}}
@@ -597,7 +617,7 @@ GEN.fcap=R=>{const r=R.r,hr=r.r(60,72),iv=60/hr,esc=r.r(1.5,1.8),vm=pacedM(r),na
 /* ---- ischemia & infarction ---- */
 GEN.antstemi=R=>{const r=R.r,hr=r.r(75,105),pr=r.r(.13,.17),qt=qtF(hr,.42),vm=V({axis:r.r(30,70),amp:r.r(.9,1.1),qt,sep:0,xq:[{c:.02,wl:.01,A:.32,d:nrm([-.15,.1,-.95])}],stA:r.r(.26,.34),std:nrm([.45,-.42,.8]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.52,d:nrm([.35,-.15,.9])}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
-GEN.infstemi=R=>{const r=R.r,hr=r.r(52,78),pr=r.r(.15,.21),qt=qtF(hr,.42),vm=V({axis:r.r(55,80),qt,xq:[{c:.018,wl:.009,A:.24,d:nrm([.1,-1,.1])}],stA:r.r(.26,.34),std:nrm([-.22,1,-.05]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.5,d:nrm([-.05,1,.5])}]}),pm=nP(r);
+GEN.infstemi=R=>{const r=R.r,hr=r.r(52,78),pr=r.r(.15,.21),qt=qtF(hr,.42),vm=V({axis:r.r(55,80),qt,xq:[{c:.018,wl:.009,A:.24,d:nrm([.1,-1,.1])}],stA:r.r(.26,.34),std:nrm([-.14,1,-.2]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.5,d:nrm([-.05,1,.5])}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
 GEN.latstemi=R=>{const r=R.r,hr=r.r(70,100),pr=r.r(.13,.17),qt=qtF(hr,.42),vm=V({axis:r.r(25,55),qt,stA:r.r(.24,.3),std:nrm([.85,-.5,-.25]),stra:.025,t:[{c:qt-.115,wl:.075,wr:.05,A:.5,d:nrm([.8,-.3,.25])}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
@@ -689,7 +709,7 @@ GEN.antsubtle=R=>{const r=R.r,hr=r.r(65,90),pr=r.r(.13,.17),qt=qtF(hr,.41),d=nrm
 GEN.takotsubo=R=>{const r=R.r,hr=r.r(78,100),pr=r.r(.13,.17),qt=r.r(.47,.52)*Math.cbrt(60/hr),d=nrm([.55,.3,.8]),vm=V({axis:r.r(40,70),qt,tfix:1,stA:.04,std:d,t:[{c:qt-.13,wl:.08,wr:.065,A:-.75,d}]}),pm=nP(r);
   sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V2','V3','V4','V5','V6','I','aVL','II'],'Deep, wide T inversion with long QT, no Q waves')};
 /* ---- tachycardias, wide and narrow ---- */
-GEN.svtab=R=>{const r=R.r,hr=r.r(165,205),lb=r.chance(.5),qt=qtF(hr),vm=lb?lbbbM(r,{qt}):rbbbM(r,{qt});sinus(R,{hr,vm,jit:.003});R.tm={vm,pm:null,pr:null};R.meta.rhy=`SVT with ${lb?'LBBB':'RBBB'} aberrancy`;R.meta.prq='none';R.meta.variant=lb?'LBBB':'RBBB';
+GEN.svtab=R=>{const r=R.r,hr=r.r(165,205),lb=r.chance(.5),qt=qtF(hr),vm=lb?V({q:[{c:.02,wl:.012,A:.8,d:nrm([.85,.15,-.05])},{c:.058,wl:.02,A:1.35,d:nrm([.5,.3,-.8])},{c:.1,wl:.024,A:.55,d:nrm([.8,.05,-.6])}],qt,stA:.15,std:nrm([-.6,-.15,.8]),stra:.03,t:[{c:qt-.1,wl:.07,wr:.045,A:.4,d:nrm([-.65,-.25,.7])}]}):rbbbM(r,{qt,xq:[{c:.086,wl:.016,wr:.014,A:.8,d:nrm([-.65,-.05,.75])}]});sinus(R,{hr,vm,jit:.003});R.tm={vm,pm:null,pr:null};R.meta.rhy=`SVT with ${lb?'LBBB':'RBBB'} aberrancy`;R.meta.prq='none';R.meta.variant=lb?'LBBB':'RBBB';
   hl(R,lb?['V1','V6']:['V1','I','V6'],lb?'Typical LBBB shape: rapid initial deflection':'Typical RBBB shape: rsR′, slurred S')};
 const wpwM=(r,f,dir)=>{const d=dir||nrm([-.35,.5,.8]);return V({q:[{c:.07,wl:.03*(.7+.8*f),wr:.014,A:1.3*f+.2,d},{c:.098+.02*f,wl:.016+.01*f,A:1.3*(1-.6*f),d:fv(60,-.25)},{c:.125+.02*f,wl:.012,A:.3*(1-.5*f),d:nrm([-.35,-.55,-.75])}],qt:.32,td:neg(d),tA:.25+.15*f})};
 GEN.preaf=R=>{const r=R.r,hr=r.r(190,250),mk=[.25,.5,.75,1].map(f=>wpwM(r,f));irregular(R,hr,.6,1.45,()=>mk[Math.floor(r.u()*4)],{min:.19});fwaves(R,.04);
@@ -699,7 +719,7 @@ GEN.antidromic=R=>{const r=R.r,hr=r.r(200,240),d=nrm([-.35,.5,.8]),vm=V({q:[{c:.
 GEN.fascvt=R=>{const r=R.r,hr=r.r(150,185),qt=Math.min(.34,60/hr*.9),vm=V({axis:r.r(-75,-55),s:1.12,sepd:nrm([-.2,.85,.45]),sep:1.2,z:-.3,xq:[{c:.095,wl:.018,A:.7,d:nrm([-.6,.1,.78])}],term:.3,qt,td:nrm([.65,.45,-.45]),tA:.35,kind:'v'}),pm=nP(r);
   sinus(R,{hr,vm,jit:.003});let tp=-r.r(0,.8);const pa=60/r.r(70,90);while(tp<DUR){addP(R,tp,pm,{cond:false});tp+=pa}R.tm={vm,pm:null,pr:null};R.meta.rhy='Fascicular VT (idiopathic, left posterior fascicle)';R.meta.prq='none';
   hl(R,['V1'],'RBBB-like, relatively narrow');hl(R,['II','III','aVF'],'Superior (left) axis','b')};
-GEN.rvotvt=R=>{const r=R.r,hr=r.r(160,200),qt=Math.min(.34,60/hr*.9),vm=V({q:[{c:.05,wl:.03,A:1.4,d:nrm([.15,.85,-.5])},{c:.112,wl:.025,A:.7,d:nrm([.45,.6,-.65])}],qt,t:[{c:qt-.09,wl:.06,wr:.04,A:.32,d:nrm([-.3,-.75,.55])}],kind:'v'}),pm=nP(r);
+GEN.rvotvt=R=>{const r=R.r,hr=r.r(160,200),qt=Math.min(.34,60/hr*.9),vm=V({q:[{c:.09,wl:.036,A:1.4,d:nrm([.15,.85,-.5])},{c:.14,wl:.016,A:.8,d:nrm([.45,.6,-.65])}],qt,t:[{c:qt-.09,wl:.06,wr:.04,A:.32,d:nrm([-.3,-.75,.55])}],kind:'v'}),pm=nP(r);
   sinus(R,{hr,vm,jit:.003});let tp=-r.r(0,.8);const pa=60/r.r(70,90);while(tp<DUR){addP(R,tp,pm,{cond:false});tp+=pa}R.tm={vm,pm:null,pr:null};R.meta.rhy='Right ventricular outflow tract VT';R.meta.prq='none';hl(R,['V1'],'LBBB-like');hl(R,['II','III','aVF'],'Inferior axis: tall R inferiorly','b')};
 GEN.bidir=R=>{const r=R.r,hr=r.r(140,170),qt=Math.min(.34,60/hr*.88),a=V({axis:-60,s:1.15,amp:1.35,sepd:nrm([-.2,.85,.45]),sep:1.3,z:-.3,xq:[{c:.098,wl:.018,A:.7,d:nrm([-.6,.1,.78])}],term:.3,qt,td:nrm([.6,.4,-.4]),tA:.32,kind:'v'}),b=V({axis:115,s:1.15,amp:1.35,sepd:nrm([.45,-.75,.3]),sep:1.3,z:-.3,xq:[{c:.098,wl:.018,A:.7,d:nrm([-.6,.1,.78])}],term:.3,qt,td:nrm([.3,-.5,-.4]),tA:.32,kind:'v'});
   sinus(R,{hr,vm:i=>i%2?b:a,jit:.003});R.tm={vm:a,pm:null,pr:null};R.meta.rhy='Bidirectional VT';R.meta.prq='none';R.meta.reg='reg';R.meta.noMeas=['axis'];hl(R,['II','aVF','I'],'QRS axis flips every beat')};
@@ -1746,11 +1766,12 @@ function computeMeta(R){const q=R.ev.q.filter(x=>x.t>=0&&x.t<DUR&&x.k!=='s').map
   if(!M.prq)M.prq=M.pr==null?'none':M.pr<120?'short':M.pr>200?'long':'normal'}
 function stThr(k){return k==='V2'||k==='V3'?.15:.1}
 function autoST(R){if(!R.ms)return;const up=[],dn=[];LEADS.forEach(k=>{const s=R.ms.leads[k].st40;if(s>=stThr(k))up.push(k);else if(s<=-.05)dn.push(k)});
-  if(up.length)hl(R,up,'ST elevation','a');if(dn.length)hl(R,dn,'ST depression','b')}
+  if(up.length)hl(R,up,'ST elevation','a');if(dn.length)hl(R,dn,'ST depression','b');
+  const xu=XL.filter(k=>R.ms.leads[k]&&R.ms.leads[k].st40>=(k==='V4R'?.1:.05));if(xu.length)hl(R,xu,'ST elevation in added leads (V4R ≥ 1 mm, V7–V9 ≥ 0.5 mm)','a')}
 function generate(pid,seed){const R=newRec(seed>>>0);GEN[pid](R);R.L=deriveLeads(R);R.ms=measure(R);computeMeta(R);if(R.autoST)autoST(R);R.pid=pid;R._c={};return R}
 
 /* ============ 12-lead viewer ============ */
-const LAYOUT={'3x4':[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6']],'6x2':[['I','V1'],['II','V2'],['III','V3'],['aVR','V4'],['aVL','V5'],['aVF','V6']],'12':LEADS.map(l=>[l])};
+const LAYOUT={'3x4':[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6']],'15':[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6'],['V4R','V7','V8','V9']],'6x2':[['I','V1'],['II','V2'],['III','V3'],['aVR','V4'],['aVL','V5'],['aVF','V6']],'12':LEADS.map(l=>[l])};
 const FILT={diag:{hp:.05,lp:150,lab:'0.05–150 Hz'},st:{hp:.05,lp:40,lab:'0.05–40 Hz'},mon:{hp:.5,lp:40,lab:'0.5–40 Hz'}};
 const DEFV={fmt:'3x4',gain:10,speed:25,filt:'diag',notch:false,strip:'II'};
 function leadData(rec,v){const key=v.filt+'|'+v.notch;if(rec._c[key])return rec._c[key];const f=FILT[v.filt],o={};
@@ -1761,7 +1782,7 @@ function Viewer(host,opt={}){
   const self={rec:null,v:{...DEFV,...(opt.v||{})},ann:false,meas:null,overlay:null,cal:false};
   host.innerHTML='';const wrap=el('div','vwrap');
   wrap.innerHTML=(opt.tools===false?'':`<div class="vtools">
-  <label>Layout <select data-k="fmt"><option value="3x4">3 × 4 + rhythm</option><option value="6x2">6 × 2 + rhythm</option><option value="12">12 × 1</option></select></label>
+  <label>Layout <select data-k="fmt"><option value="3x4">3 × 4 + rhythm</option><option value="15">16-lead (+ V4R, V7–V9)</option><option value="6x2">6 × 2 + rhythm</option><option value="12">12 × 1</option></select></label>
   <label>Rhythm strip <select data-k="strip">${LEADS.map(l=>`<option>${l}</option>`).join('')}</select></label>
   <label>Gain <select data-k="gain"><option value="5">5 mm/mV</option><option value="10">10 mm/mV</option><option value="20">20 mm/mV</option></select></label>
   <label>Speed <select data-k="speed"><option value="25">25 mm/s</option><option value="50">50 mm/s</option></select></label>
@@ -1782,7 +1803,7 @@ function Viewer(host,opt={}){
   self.setOverlay=f=>{self.overlay=f;self.draw()};
   self.draw=()=>{if(!self.rec)return;const rec=self.rec,v=self.v,D=leadData(rec,v),C=cssv(),dpr=window.devicePixelRatio||1;
     const lay=LAYOUT[v.fmt],cols=lay[0].length,strip=v.fmt!=='12'&&opt.strip!==false,nr=lay.length+(strip?1:0);
-    const s=v.speed,g=v.gain,rowMM=v.fmt==='12'?{5:13,10:19,20:32}[g]:{5:17,10:27,20:44}[g],LM=3+.2*s+2,Wmm=LM+DUR*s+2;
+    const s=v.speed,g=v.gain,rowMM=v.fmt==='12'?{5:13,10:19,20:32}[g]:v.fmt==='15'?{5:15,10:24,20:40}[g]:{5:17,10:27,20:44}[g],LM=3+.2*s+2,Wmm=LM+DUR*s+2;
     // annotation label levels (spans and points)
     const anns=self.ann?rec.ann:[],labs=anns.filter(a=>a.type!=='hl');let lev=0;const ends=[];
     const TMbase=4;const cw=Math.max(sc.clientWidth||700,320),pm=Math.max(opt.minPm??2.9,(cw-2)/Wmm);
@@ -1822,7 +1843,8 @@ function Viewer(host,opt={}){
     if(self.meas){const[a,b]=self.meas,xa=X(a.t),xb=X(b.t);ctx.strokeStyle=C.mk;ctx.lineWidth=1.3;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(xa,TOPpx);ctx.lineTo(xa,H);ctx.moveTo(xb,TOPpx);ctx.lineTo(xb,H);ctx.stroke();
       ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(xa,a.y);ctx.lineTo(xb,a.y);ctx.stroke();if(Math.abs(b.y-a.y)>4){ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(xb-14,b.y);ctx.lineTo(xb+14,b.y);ctx.moveTo(xb,a.y);ctx.lineTo(xb,b.y);ctx.stroke();ctx.setLineDash([])}}
     // legend for lead highlights
-    if(hls.length){leg.hidden=false;leg.innerHTML=hls.map(a=>`<span class="lg ${a.k==='b'?'b':'a'}"><i></i>${a.txt}: <b>${a.leads.join(', ')}</b></span>`).join('')}else leg.hidden=true};
+    const vis=new Set(lay.flat().concat(strip?[v.strip]:[])),hv=hls.map(a=>({...a,leads:a.leads.filter(k=>vis.has(k))})).filter(a=>a.leads.length);
+    if(hv.length){leg.hidden=false;leg.innerHTML=hv.map(a=>`<span class="lg ${a.k==='b'?'b':'a'}"><i></i>${a.txt}: <b>${a.leads.join(', ')}</b></span>`).join('')}else leg.hidden=true};
   const pos=e=>{const b=cv.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}};
   const tOf=x=>clamp((x/G.pm-G.LM)/G.s,0,DUR);
   const show=()=>{if(!self.meas)return;const[a,b]=self.meas,dt=Math.abs(b.t-a.t),dv=(a.y-b.y)/(G.g*G.pm);read.textContent=dt<.01?'':`Δt ${(dt*1000).toFixed(0)} ms · ${(dt*25).toFixed(1)} small boxes · rate ${(60/dt).toFixed(0)}/min${Math.abs(dv)>.04?` · ΔV ${dv.toFixed(2)} mV (${(dv*10).toFixed(1)} mm)`:''}`};
@@ -1844,7 +1866,7 @@ let DB=store.load();
 function patStats(){const o={};P.forEach(p=>o[p.id]={n:0,ok:0});DB.answers.forEach(a=>{const s=o[a.pid];if(s){s.n++;if(a.ok)s.ok++}});return o}
 
 /* ============ measurement questions ============ */
-const MT={rate:'Rate',rhythm:'Regularity',axis:'Axis',pr:'PR interval',qrs:'QRS width',qtc:'QTc'};
+const MT={rate:'Rate',rhythm:'Regularity',axis:'Axis',pr:'PR interval',qrs:'QRS width',qtc:'QTc',lead:'Lead selection',wct:'WCT algorithm',read:'Structured read',alarm:'Alarm triage'};
 const near=(v,bs,tol)=>bs.some(b=>Math.abs(v-b)<tol);
 function axisCat(a){return a>=-30&&a<=90?0:a<-30&&a>=-90?1:a>90&&a<=180?2:3}
 function measOptions(R,r){const M=R.meta,no=M.noMeas||[],out=[];
@@ -1898,15 +1920,15 @@ function options(pid,r){const p=PM[pid],all=P.map(x=>x.id).filter(x=>x!==pid),sa
   else if(S.diff==='easy'){d=[...shuffle(other,r),...shuffle(sameCat,r)];d=d.filter(x=>!sim.includes(x)).concat(d.filter(x=>sim.includes(x)))}
   else d=[...shuffle(sim.slice(0,2),r),...shuffle(sameCat,r),...shuffle(other,r)];
   d=[...new Set(d)].slice(0,3);return shuffle([pid,...d],r)}
-function newQ(pid,kind,seed){seed=seed??Math.floor(Math.random()*1e9);if(kind==='traj')return newTrajQ(seed);const r=mkRand(seed+3),rec=generate(pid,seed);
+function newQ(pid,kind,seed){seed=seed??Math.floor(Math.random()*1e9);if(kind==='traj')return newTrajQ(seed);if(kind==='ana'){const r=mkRand(seed+5),x=r.u();let q=null;if(wctQ.can(pid)&&x<.6)q=wctQ(pid,seed);else if(x<.35&&leadQ.can(pid))q=leadQ(pid,seed);else if(x<.7)q=readQ(pid,seed);else q=alarmQ(seed);if(q)return q;kind='dx'}const r=mkRand(seed+3),rec=generate(pid,seed);
   if(kind==='meas'){const ts=measOptions(rec,r);if(ts.length){const t=ts[Math.floor(r.u()*ts.length)];return{kind,pid,seed,rec,m:makeMeas(rec,t,r),chosen:null,hint:0}}}
   if(kind==='mech'){const m=makeMech(rec,r);if(m)return{kind,pid,seed,rec,m,chosen:null,hint:0}}
   return{kind:'dx',pid,seed,rec,opts:options(pid,r),chosen:null,hint:0,q2c:null}}
-const kindNow=()=>{if(S.qt!=='mix')return S.qt;const x=Math.random();return x<.38?'dx':x<.6?'meas':x<.8?'mech':'traj'};
+const kindNow=()=>{if(S.qt!=='mix')return S.qt;const x=Math.random();return x<.34?'dx':x<.52?'meas':x<.7?'mech':x<.85?'traj':'ana'};
 function setStage(){$('#qIntro').hidden=!!S.q||!!S.exam&&S.exam.done;$('#qStage').hidden=!S.q&&!(S.exam&&S.exam.done)}
-function showQ(q){S.q=q;S.seen.push(q.pid);setStage();if(q.kind==='traj'){$('#qViewer').hidden=true}else{$('#qViewer').hidden=false;qViewer.setRec(q.rec);qViewer.setAnn(false)}$('#qAnn').checked=false;renderCard()}
-const isOk=q=>q.kind==='traj'?trajOk(q):q.kind==='dx'?q.chosen===q.pid:q.chosen===q.m.a;
-function recordAnswer(q,mode){const ok=isOk(q);if(q.kind==='case')DB.q2.push({pid:q.pid,ok,ts:Date.now(),c:1});else if(q.kind==='traj')DB.traj.push({scn:q.scn||q.pid,tt:q.tt,ok,m:mode,ts:Date.now()});else if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else if(q.kind==='mech')DB.mech.push({pid:q.pid,t:q.m.type,c:q.m.c,ok,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
+function showQ(q){S.q=q;S.seen.push(q.pid);setStage();if(q.kind==='traj'||q.kind==='alarm'){$('#qViewer').hidden=true}else{$('#qViewer').hidden=false;qViewer.setRec(q.rec);qViewer.setAnn(false)}$('#qAnn').checked=false;renderCard()}
+const isOk=q=>q.kind==='traj'?trajOk(q):['lead','read','wct','alarm'].includes(q.kind)?extraOk(q):q.kind==='dx'?q.chosen===q.pid:q.chosen===q.m.a;
+function recordAnswer(q,mode){const ok=isOk(q);if(['lead','read','wct','alarm'].includes(q.kind))DB.meas.push({pid:q.pid,t:q.kind,ok,m:mode,ts:Date.now()});else if(q.kind==='case')DB.q2.push({pid:q.pid,ok,ts:Date.now(),c:1});else if(q.kind==='traj')DB.traj.push({scn:q.scn||q.pid,tt:q.tt,ok,m:mode,ts:Date.now()});else if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else if(q.kind==='mech')DB.mech.push({pid:q.pid,t:q.m.type,c:q.m.c,ok,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
   if(mode==='practice'){S.streak=ok?S.streak+1:0;DB.best=Math.max(DB.best||0,S.streak)}store.save(DB);LRN.record(q,ok);return ok}
 function startQuiz(){S.streak=0;S.seen=[];if(S.mode==='exam'){const st=patStats(),r=mkRand(Date.now()),pl=pool();let ids=pl.map(p=>({id:p.id,w:(st[p.id].n?1+2*(1-st[p.id].ok/st[p.id].n):2)*r.u()})).sort((a,b)=>b.w-a.w).slice(0,Math.min(15,pl.length)).map(x=>x.id);
     while(ids.length<15)ids.push(pl[Math.floor(r.u()*pl.length)].id);ids=shuffle(ids,r);S.exam={qs:ids.map(id=>newQ(id,kindNow())),i:0,done:false};showQ(S.exam.qs[0])}
@@ -2978,15 +3000,15 @@ function mechQ(pid,type,seed){seed=seed??Math.floor(Math.random()*1e9);const r=m
 
 /* ---- stage question makers ---- */
 function pickItem(list,prefix,used){const d=LRN&&DB.srs?DB.srs:{},t=Date.now();const w=list.map(x=>{const it=d[prefix+x];let v=it?(it.b<2?3:it.due<=t?2:1/(1+it.b)):2.5;if(used&&used.has(x))v*=.08;return v});let s=w.reduce((a,b)=>a+b,0)*Math.random();for(let i=0;i<list.length;i++){s-=w[i];if(s<=0)return list[i]}return list[0]}
-function anaQ(pid,r){const kinds=['meas','meas'];if(typeof leadQ==='function'&&leadQ.can(pid))kinds.push('lead','lead');if(typeof wctQ==='function'&&wctQ.can(pid))kinds.push('wct','wct');const k=kinds[Math.floor(r.u()*kinds.length)];
-  if(k==='lead'){const q=leadQ(pid);if(q)return q}if(k==='wct'){const q=wctQ(pid);if(q)return q}const q=newQ(pid,'meas');return q.kind==='meas'?q:null}
+function anaQ(pid,r){const kinds=['meas','meas'];if(MODS.tech.pats.includes(pid))kinds.push('alarm');if(typeof leadQ==='function'&&leadQ.can(pid))kinds.push('lead','lead');if(typeof wctQ==='function'&&wctQ.can(pid))kinds.push('wct','wct');const k=kinds[Math.floor(r.u()*kinds.length)];
+  if(k==='alarm'){const q=alarmQ();if(q)return q}if(k==='lead'){const q=leadQ(pid);if(q)return q}if(k==='wct'){const q=wctQ(pid);if(q)return q}const q=newQ(pid,'meas');return q.kind==='meas'?q:null}
 function cumulPats(mid){const all=[...(MODS[mid].pats||[])],d=DB.path||{};Object.keys(MODS).forEach(m=>{if(m!==mid&&m!=='synth'&&d[m]&&d[m].rec&&d[m].rec.done)all.push(...(MODS[m].pats||[]))});return[...new Set(all)]}
 function stageQ(mid,sk,i,sess){const m=MODS[mid],r=mkRand(Date.now()+i*977),used=sess.used||(sess.used=new Set()),pats=m.pats||[],take=(list,pre)=>{const x=pickItem(list,pre,used);used.add(x);return x};
   const withDiff=(d,f)=>{const o=S.diff;S.diff=d;try{return f()}finally{S.diff=o}};
   if(sk==='mech'){for(let k=0;k<6;k++){const q=mechQ(take(pats,'mech:'),'why');if(q)return q}return null}
   if(sk==='rec')return newQ(take(pats,'dx:'),'dx');
   if(sk==='ana'){for(let k=0;k<8;k++){const q=anaQ(take(pats,'meas:'),r);if(q)return q}return newQ(take(pats,'dx:'),'dx')}
-  if(sk==='app')return caseQ(take(pats,'case:'));
+  if(sk==='app'){if(mid==='tech'&&r.u()<.5){const q=alarmQ();if(q)return q}if(r.u()<.35){const q=readQ(take(pats,'read:'));if(q)return q}return caseQ(take(pats,'case:'))}
   if(sk==='int'){const scn=(m.scn||[]),mode=i%3;
     if(mode===0&&scn.length){const s=scn[Math.floor(r.u()*scn.length)];return newTrajQ(Math.floor(Math.random()*1e9),null,s)}
     if(mode<=1){for(let k=0;k<6;k++){const q=mechQ(take(pats,'mech:'),'link');if(q&&q.m.type==='link')return q}}
@@ -2996,13 +3018,13 @@ function stageQ(mid,sk,i,sess){const m=MODS[mid],r=mkRand(Date.now()+i*977),used
     if(k==='case')return caseQ(pid);if(k==='mech'){const q=mechQ(pid,'why');if(q)return q}if(k==='meas'){const q=newQ(pid,'meas');if(q.kind==='meas')return q}return withDiff('hard',()=>newQ(pid,'dx'))}
   return null}
 function reviewQ(key){const[k,id]=key.split(':');if(k==='traj')return SCN[id]?newTrajQ(Math.floor(Math.random()*1e9),null,id):null;if(!PM[id])return null;
-  if(k==='mech')return mechQ(id,'why')||newQ(id,'dx');if(k==='case')return caseQ(id);if(k==='meas'){const q=newQ(id,'meas');return q}if(k==='lead'&&typeof leadQ==='function'){const q=leadQ(id);if(q)return q}return newQ(id,'dx')}
-const qLabel=q=>{const n=q.pid&&PM[q.pid]?PM[q.pid].name:'';if(q.kind==='traj')return`${TT[q.tt]} · ${q.scn?SCN[q.scn].name:'stable pattern'}`;if(q.kind==='mech')return`${q.m.type==='why'?'Mechanism':'Integration'} · ${n}`;if(q.kind==='meas')return`${MT[q.m.type]} · ${n}`;if(q.kind==='case')return`Apply · ${n}`;if(q.kind==='lead')return`Leads · ${n}`;if(q.kind==='wct')return`Algorithm · ${n}`;return n};
+  if(k==='mech')return mechQ(id,'why')||newQ(id,'dx');if(k==='case')return caseQ(id);if(k==='meas'){const q=newQ(id,'meas');return q}if(k==='lead'){const q=leadQ(id);if(q)return q}if(k==='read'){const q=readQ(id);if(q)return q}return newQ(id,'dx')}
+const qLabel=q=>{const n=q.pid&&PM[q.pid]?PM[q.pid].name:'';if(q.kind==='traj')return`${TT[q.tt]} · ${q.scn?SCN[q.scn].name:'stable pattern'}`;if(q.kind==='mech')return`${q.m.type==='why'?'Mechanism':'Integration'} · ${n}`;if(q.kind==='meas')return`${MT[q.m.type]} · ${n}`;if(q.kind==='case')return`Apply · ${n}`;if(q.kind==='lead')return`Leads · ${n}`;if(q.kind==='wct')return`Algorithm · ${n}`;if(q.kind==='read')return`Structured read · ${n}`;if(q.kind==='alarm')return`Alarm “${q.lab}” · ${q.rec.meta.rhy}`;return n};
 
 /* ---- adapter for the shared path engine ---- */
 const LCFG={app:'ecg',key:'ecgrr.v1',other:{key:'eegrr.v1',name:'EEG Reading Room',href:'../'},tracks:TRACKS,mods:MODS,core:CORE,
  db:()=>DB,save:()=>store.save(DB),patName:id=>PM[id]?PM[id].name:id,scnName:id=>SCN[id]?SCN[id].name:id,conName:c=>CON[c]?CON[c].n:c,conText:c=>CON[c]?CON[c].s:'',conLab:c=>CON[c]&&CON[c].lab,
- keysOf:q=>{if(q.kind==='traj')return q.scn?['traj:'+q.scn]:[];if(!q.pid)return[];return[{dx:'dx',mech:'mech',meas:'meas',case:'case',lead:'lead',wct:'meas'}[q.kind]+':'+q.pid]},
+ keysOf:q=>{if(q.kind==='traj')return q.scn?['traj:'+q.scn]:[];if(!q.pid)return[];return[{dx:'dx',mech:'mech',meas:'meas',case:'case',lead:'lead',wct:'meas',read:'read',alarm:'case'}[q.kind]+':'+q.pid]},
  validKey:k=>{const[a,b]=k.split(':');return a==='traj'?!!SCN[b]:!!PM[b]},label:qLabel,stageQ,reviewQ,
  beginSession:()=>{S.exam=null;S.drill=null;$('#qDrill').hidden=true},
  show:q=>{setTab('quiz');$('#qIntro').hidden=true;$('#qStage').hidden=false;$('#qMeta').hidden=false;showQ(q);window.scrollTo({top:0})},
@@ -3011,6 +3033,101 @@ const LCFG={app:'ecg',key:'ecgrr.v1',other:{key:'eegrr.v1',name:'EEG Reading Roo
  openPath:mid=>{setTab('path');if(mid){const b=$(`#tab-path [data-mid="${mid}"]`);if(b)b.click()}},openScn:id=>openEvo(id,1),
  openSection:k=>{if(['ap','cond','cor'].includes(k))openLab(k);else{setTab('atlas');setSub(k)}},
  redraw:()=>{if(!$('#tab-path').hidden)LRN.render($('#tab-path'));if(S.q)qViewer.draw();if(!$('#tab-atlas').hidden)redrawSub()}};
+
+/* ============ analysis tasks: lead selection, WCT algorithms, structured read, alarm triage ============ */
+const LGRID=[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6']];
+const NOLEAD=['vf','tdp','pmvt','vflutter','cpr','tremor','artifact','hyperk2','preaf','bidir'];
+function leadSets(R){const L=R.ms.leads,o={ste:[],std:[],q:[],tinv:[]};LEADS.forEach(k=>{const x=L[k];if(!x)return;if(x.st40>=stThr(k))o.ste.push(k);else if(x.st40<=-.05)o.std.push(k);
+  if(k!=='aVR'&&k!=='III'&&x.qd>=.03&&x.qa<=-.1)o.q.push(k);if(k!=='aVR'&&x.tmin<-.1&&(x.tmax<.06||-x.tmin>x.tmax*.9))o.tinv.push(k)});return o}
+const LQV={ste:{q:'Select every lead with ST elevation',rule:'at least 1 mm at J+40 ms (1.5 mm in V2–V3)',why:'Leads whose positive pole faces the injury current (toward injured epicardium) record the ST segment above baseline. Contiguous elevated leads map a territory; the leads looking from the opposite side show the same vector as depression.'},
+ std:{q:'Select every lead with ST depression',rule:'at least 0.5 mm at J+40 ms',why:'ST depression is either reciprocal (the same injury vector seen from behind), subendocardial ischemia (current flowing toward the cavity), or secondary to abnormal depolarization (strain, bundle branch block, digoxin). Which one depends on the pattern of leads.'},
+ q:{q:'Select every lead with a pathologic Q wave',rule:'at least 30 ms wide and 1 mm deep (III alone and aVR excluded)',why:'Dead myocardium contributes no depolarization forces. A lead looking through the infarct sees the far wall moving away: an initial negative deflection. Narrow, deep Q waves can instead come from a thick septum (HCM).'},
+ tinv:{q:'Select every lead with an inverted T wave',rule:'T clearly negative, fully or in its terminal half (aVR excluded)',why:'The T wave follows the repolarization gradient. When the layer facing a lead repolarizes later than usual (ischemia, reperfusion, strain, cardiomyopathy, raised intracranial pressure), the gradient reverses and the T inverts.'}};
+function leadQ(pid,seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+41),rec=generate(pid,seed);if(!rec.ms)return null;const sets=leadSets(rec),p=PM[pid];
+  const pref={isch:['ste','std','q','tinv'],chan:['tinv','ste','q'],meta:['tinv','ste','std'],struct:['std','tinv','q'],mimic:['ste','tinv','std'],cond:['tinv','std','q'],pace:['std','ste'],normal:['ste','tinv'],rhythm:['std','tinv']}[p.cat]||['ste','std','tinv','q'];
+  const ok=shuffle(pref,r).filter(v=>sets[v].length>=1&&sets[v].length<=9);if(!ok.length)return null;const v=ok[0];
+  return{kind:'lead',pid,seed,rec,v,set:sets[v],pick:[],chosen:null,m:{a:1,opts:[]}}}
+leadQ.can=pid=>!NOLEAD.includes(pid)&&!!PM[pid];
+function jacc(a,b){const A=new Set(a),B=new Set(b);let i=0;A.forEach(x=>{if(B.has(x))i++});const u=new Set([...a,...b]).size;return u?i/u:1}
+function leadOk(q){return q.chosen!==null&&q.chosen!==-1&&jacc(q.pick,q.set)>=.75}
+/* ---- wide-complex tachycardia algorithms, computed on the median beat ---- */
+const WCTP=['vt','fascvt','rvotvt','svtab','antidromic','preaf'];
+function wctFeat(R){const tp=template(R);if(!tp)return null;const{L,t0,vm}=tp,i0=Math.round((t0+vm.on)*FS),i1=Math.round((t0+vm.off)*FS),ib=Math.max(0,i0-6),f={};
+  PREC.concat(['aVR','I','II']).forEach(k=>{const a=L[k],b=a[ib];let mx=-9,mn=9,imx=i0,imn=i0;for(let i=i0;i<=i1;i++){const v=a[i]-b;if(v>mx){mx=v;imx=i}if(v<mn){mn=v;imn=i}}
+    const rs=mx>.1&&mn<-.1&&imx<imn&&imn<i1-Math.round(.012*FS);let s0=0,i=i0;for(;i<=i1;i++){const v=a[i]-b;if(Math.abs(v)>.025){s0=Math.sign(v);break}}let w=0,ipk=0;if(s0){let j=i;for(;j<=i1;j++){const v=a[j]-b;if(s0*v>ipk)ipk=s0*v;if(Math.sign(v)===-s0&&Math.abs(v)>.025)break}w=(j-i0)/FS*1000}
+    const n4=Math.round(.04*FS),vi=Math.abs((a[Math.min(i1,i0+n4)]-b)-0),vt=Math.abs((a[i1]-b)-(a[Math.max(i0,i1-n4)]-b));
+    f[k]={R:mx,S:-mn,rs,rsInt:rs?Math.round((imn-i0)/FS*1000):0,init:s0,initW:Math.round(w),initPk:ipk,vi,vt,net:mx+mn}});
+  const dis=R.ev.p.some(p=>!p.cond)&&R.ev.q.some(q=>q.k==='v'),cap=R.ann.some(a=>/apture|usion/.test(a.txt||''));return{f,dis:dis||cap,qrs:Math.round(vm.qrsd*1000)}}
+function wctSteps(F,alg){const f=F.f,pr=PREC;if(alg==='brugada'){const anyRS=pr.filter(k=>f[k].rs),maxRS=Math.max(0,...anyRS.map(k=>f[k].rsInt)),morph=f.V6.S>f.V6.R*1.05||(f.V1.net<0&&f.V1.rsInt>70);
+    return[{q:'Is an RS complex absent from every precordial lead (V1–V6)?',fact:!anyRS.length,detail:anyRS.length?`RS present in ${anyRS.join(', ')}.`:'No precordial lead has an R followed by an S: concordant or monophasic complexes.',why:'Absent RS means activation sweeps from one end of the ventricles (apex or base) without the septal-then-free-wall sequence of His–Purkinje activation.'},
+      {q:'Is the R-to-S interval longer than 100 ms in any precordial lead?',fact:maxRS>100,detail:anyRS.length?`Longest R-to-S ${maxRS} ms.`:'Not applicable.',why:'Onset of R to the nadir of S reflects how fast the early part of the QRS spreads; slow, muscle-to-muscle spread from a ventricular focus stretches it.'},
+      {q:'Is there AV dissociation (independent P waves, capture or fusion beats)?',fact:F.dis,detail:F.dis?'P waves or capture beats show the atria and ventricles running independently.':'No dissociated P waves visible on this strip.',why:'If the atria and ventricles keep separate time, the tachycardia must arise below the AV node.'},
+      {q:'Do V1–V2 and V6 meet the morphology criteria for VT (for example, R/S < 1 in V6)?',fact:morph,detail:`V6: R ${(f.V6.R*10).toFixed(1)} mm, S ${(f.V6.S*10).toFixed(1)} mm${f.V1.net<0?`; V1 R-to-S ${f.V1.rsInt} ms`:''}.`,why:'Aberrancy keeps the shape of a true bundle branch block (rsR′ in V1, qRs in V6). Shapes that no bundle branch block can make point to a ventricular origin.'}]}
+  const a=f.aVR;return[{q:'Does the QRS in aVR start with an R wave (a dominant initial positive deflection)?',fact:a.init>0&&a.initPk>=.15,detail:`Initial deflection in aVR is ${a.init>0?`positive, ${(a.initPk*10).toFixed(1)} mm`:a.init<0?'negative':'flat'}.`,why:'aVR looks up from the right shoulder toward the base. Normal and aberrant activation moves away from it, so aVR starts negative. An initial R means activation starts at the apex or inferior wall and moves toward aVR: ventricular origin.'},
+    {q:'Is there an initial r wave in aVR wider than 40 ms?',fact:a.init>0&&a.initW>40,detail:a.init>0?`Initial r lasts about ${a.initW} ms.`:'aVR starts negative: no initial r. (The original algorithm also counts a wide initial q and a notch on the downstroke; those are not assessed in this model.)',why:'A wide initial deflection means slow initial activation through working muscle rather than fast Purkinje fibres.'},
+    {q:'In aVR, is the initial 40 ms voltage change (vi) no larger than the terminal 40 ms (vt)?',fact:a.vi<=a.vt,detail:`vi ${(a.vi*10).toFixed(1)} mm, vt ${(a.vt*10).toFixed(1)} mm (vi/vt ${(a.vi/Math.max(a.vt,.001)).toFixed(2)}).`,why:'In aberrancy the septum is activated quickly through the intact bundle, so the start of the QRS is fast and the delay is at the end (vi > vt). VT starts slowly in muscle and speeds up once it reaches the Purkinje network (vi ≤ vt).'}]}
+function wctQ(pid,seed){if(!WCTP.includes(pid))return null;seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+53),rec=generate(pid,seed),F=wctFeat(rec);if(!F)return null;const alg=r.chance(.5)?'brugada':'vereckei',steps=wctSteps(F,alg);
+  let concl=1;for(const s of steps)if(s.fact){concl=0;break}const truth=['svtab'].includes(pid)?1:0;
+  return{kind:'wct',pid,seed,rec,alg,steps,i:0,ans:[],concl,chosen:null,m:{a:truth,opts:['Ventricular tachycardia','SVT with aberrancy']}}}
+wctQ.can=pid=>WCTP.includes(pid);
+/* ---- structured read ---- */
+function readQ(pid,seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+61),rec=generate(pid,seed),M=rec.meta,no=M.noMeas||[],f=[];if(!M.hr||no.includes('rate'))return null;
+  f.push({k:'reg',n:'Ventricular rhythm',o:['Regular','Regularly irregular','Irregularly irregular'],a:{reg:0,regirr:1,irr:2}[M.reg]??0});
+  f.push({k:'rate',n:'Rate',o:['Under 60','60–100','Over 100'],a:M.hr<60?0:M.hr<=100?1:2});
+  if(M.axis!=null&&!no.includes('axis')&&!near(M.axis,[-30,90,180,-180,-90],9))f.push({k:'axis',n:'Axis',o:['Normal','Left','Right','Extreme'],a:axisCat(M.axis)});
+  if(!M.paced&&!no.includes('pr')&&!(M.pr!=null&&near(M.pr,[120,200],12)))f.push({k:'pr',n:'PR',o:['Short','Normal','Long','Variable / none'],a:{short:0,normal:1,long:2,var:3,none:3}[M.prq]});
+  if(M.qrs&&!no.includes('qrs')&&!near(M.qrs,[110,120],8))f.push({k:'qrs',n:'QRS',o:['Narrow','Intermediate','Wide'],a:M.qrs<110?0:M.qrs<120?1:2});
+  if(M.qtcB&&!no.includes('qtc')&&M.hr>=50&&M.hr<=100&&!near(M.qtcB,[450,500],14))f.push({k:'qtc',n:'QTc',o:['Normal or short','450–499','500 or more'],a:M.qtcB<450?0:M.qtcB<500?1:2});
+  const opts=options(pid,r);f.push({k:'dx',n:'Main finding',o:opts.map(x=>PM[x].name),a:opts.indexOf(pid),dx:1});
+  return{kind:'read',pid,seed,rec,f,sel:{},chosen:null,m:{a:1,opts:[]}}}
+function readScore(q){const n=q.f.length;let c=0;q.f.forEach(x=>{if(q.sel[x.k]===x.a)c++});return c/n}
+function readOk(q){return q.chosen!==null&&q.chosen!==-1&&readScore(q)>=.8&&q.sel.dx===q.f.find(x=>x.k==='dx').a}
+/* ---- monitor alarm triage ---- */
+const ALARMS=[['vt','V-TACH',1],['vf','V-FIB',1],['tdp','V-TACH',1],['avb3','BRADY',1],['sinusarrest','PAUSE',1],['sbrady','BRADY',1],['pvc','PVC BIGEMINY',1],['flutter','TACHY',1],
+  ['artifact','V-TACH',0],['tremor','V-FIB',0],['lowamp','ASYSTOLE',0],['dblcount','TACHY',0],['af','IRREGULAR HR',1],['fcap','PACER NOT CAPTURE',1]];
+function alarmRec(id,seed){if(id==='lowamp'){const R=generate('nsr',seed);for(const k of['II','I','III','aVF','aVR','aVL']){const a=R.L[k];for(let i=0;i<a.length;i++)a[i]*=.07}R._c={};R.meta.rhy='Sinus rhythm (low amplitude in the monitored lead)';return R}
+  if(id==='dblcount'){const R=generate('hyperk1',seed);R.meta.rhy='Sinus rhythm with tall T waves (T waves counted as beats)';return R}return generate(id,seed)}
+const ALWHY={vt:'Wide regular complexes without P waves in both channels: a true ventricular rhythm.',vf:'Chaotic activity in every channel with no organized QRS.',tdp:'Polymorphic VT in every channel.',avb3:'P waves march through without conducting; the slow escape is real.',sinusarrest:'A real pause with no P wave, then an escape or sinus beat.',sbrady:'Every beat is real and slow.',pvc:'Real alternating PVCs; usually not an emergency but worth reviewing electrolytes and ischemia.',flutter:'Regular atrial waves at 300 with 2:1 conduction.',af:'True AF: irregularly irregular with no P waves.',fcap:'Pacing spikes without capture: the patient may be bradycardic.',
+  artifact:'Native narrow QRS complexes march through the “VT” in the second channel. Movement of one electrode, not the heart.',tremor:'Regular 4–6 Hz oscillation in limb-lead channels with normal QRS complexes underneath: tremor.',lowamp:'The monitored lead shows almost nothing, but V1 shows normal beats. The heart vector is perpendicular to that lead or the contact is poor: change the lead or replace the electrode.',dblcount:'The monitor counts the tall peaked T waves as extra QRS complexes, doubling the rate. Change the lead or adjust the sensitivity, and think about potassium.'};
+function alarmQ(seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+71),[id,lab,tr]=ALARMS[Math.floor(r.u()*ALARMS.length)],rec=alarmRec(id,seed);
+  const chans=['II',id==='artifact'?'III':id==='tremor'?'II':'V1'];if(id==='tremor')chans[0]='I';return{kind:'alarm',pid:PM[id]?id:null,aid:id,seed,rec,lab,chans,chosen:null,m:{a:tr?0:1,opts:['True alarm: go to the patient and treat the rhythm','False alarm: the signal or settings are wrong']}}}
+/* ---- rendering for the four task types ---- */
+function renderExtra(q,card,answered){if(!['lead','wct','read','alarm'].includes(q.kind))return false;const p=q.pid?PM[q.pid]:null;let h='';
+  const done=`<div class="row"><button class="btn primary" id="qNext">Next (N)</button>${p?'<button class="btn" id="qAtlas">Open in Atlas</button>':''}</div>`;
+  if(q.kind==='lead'){const V=LQV[q.v],ok=answered&&leadOk(q),L=q.rec.ms.leads;
+    h+=answered?`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':q.chosen===-1?'Time ran out':'Not quite'}${p?`<span style="color:var(--ink);font-weight:500"> · ${p.name}</span>`:''}<span class="pill">Leads</span></div>`:`<div class="row" style="justify-content:space-between"><h2>${V.q}</h2><span class="pill">Leads</span></div><p class="lbl" style="text-transform:none;letter-spacing:0">Criterion: ${V.rule}. Use the calipers (ΔV) on the tracing above if needed.</p>`;
+    if(answered)h+=`<h2>${V.q}</h2>`;
+    h+=`<div class="lgrid">${LGRID.flat().map(k=>{const on=q.pick.includes(k),inS=q.set.includes(k),cls=answered?(inS&&on?'hit':inS?'miss':on?'extra':''):(on?'on':'');const val=answered?(q.v==='ste'||q.v==='std'?`${(L[k].st40*10>0?'+':'')}${(L[k].st40*10).toFixed(1)}`:q.v==='q'?`${Math.round(L[k].qd*1000)} ms`:`${(Math.abs(L[k].tmin)>L[k].tmax?L[k].tmin*10:L[k].tmax*10).toFixed(1)}`):'';
+      return`<button class="lbtn ${cls}" type="button" data-ld="${k}" ${answered?'disabled':''} aria-pressed="${on}"><b>${k}</b>${val?`<span>${val}</span>`:''}</button>`}).join('')}</div>`;
+    if(!answered)h+=`<div class="row"><button class="btn primary" id="lqCheck" type="button">Check leads</button><span class="lbl" style="text-transform:none;letter-spacing:0">${q.pick.length} selected</span></div>`;
+    else{h+=`<div class="row" style="gap:6px 14px;font-size:12.5px"><span><i class="lk hit"></i>Correct</span><span><i class="lk miss"></i>Missed</span><span><i class="lk extra"></i>Not part of the set</span></div><div class="note"><b>Answer: ${q.set.join(', ')}.</b> ${V.why}${q.v==='ste'?` Territories: ${[...new Set(q.set.map(leadTerr))].join(', ')}.`:''}</div>${p&&p.mech?`<p style="margin:0"><b>${p.name}.</b> ${p.mech}</p>`:''}`+done}}
+  else if(q.kind==='wct'){const stp=q.steps,alg=q.alg==='brugada'?'Brugada (1991)':'Vereckei aVR (2008)',stop=stp.findIndex(s=>s.fact),last=stop<0?stp.length-1:stop;
+    h+=`<div class="row" style="justify-content:space-between"><h2>Wide-complex tachycardia: work the ${alg} algorithm</h2><span class="pill">Algorithm</span></div><p class="lbl" style="text-transform:none;letter-spacing:0">Answer each step from the tracing. Any “yes” means VT; “no” to every step favours SVT with aberrancy.</p><ol class="wsteps">`;
+    for(let i=0;i<=Math.min(q.i,last);i++){const s=stp[i],a=q.ans[i];h+=`<li><b>${s.q}</b>${a===undefined?`<div class="row" style="gap:8px;margin-top:6px"><button class="btn small" type="button" data-wa="1">Yes</button><button class="btn small" type="button" data-wa="0">No</button></div>`:`<div class="${a===s.fact?'wok':'wno'}">You said ${a?'yes':'no'} · measured: ${s.fact?'yes':'no'}. ${s.detail}</div><div class="msum">${s.why}</div>`}</li>`}
+    h+='</ol>';const stepsDone=q.ans.length>last;
+    if(stepsDone&&!answered)h+=`<div class="note">The algorithm ${q.concl===0?`stops at step ${last+1}: <b>VT</b>`:'finds no VT criterion: <b>SVT with aberrancy</b>'}. What is your conclusion?</div><div class="qgrid">${q.m.opts.map((o,i)=>`<button class="opt" data-mi="${i}"><kbd>${i+1}</kbd><span>${o}</span></button>`).join('')}</div>`;
+    if(answered){const ok=q.chosen===q.m.a;h=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':q.chosen===-1?'Time ran out':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${p.name}</span></div>`+h;
+      h+=`<div class="note"><b>${q.m.opts[q.m.a]}.</b> ${q.pid==='preaf'||q.pid==='antidromic'?'This is a pre-excited tachycardia: the ventricles are activated through an accessory pathway, so every algorithm calls it VT. That is the safe call: treat as VT and avoid AV-nodal blockers.':q.pid==='fascvt'?'Fascicular VT exits into the Purkinje network early, so its QRS is narrower and can pass the first algorithm steps; the RBBB with left-axis shape in a young patient is the clue.':q.concl!==q.m.a?'The algorithm and the true origin disagree here, which happens in a minority of cases; when uncertain, treat a wide regular tachycardia as VT.':'The algorithm agrees with the true origin.'}</div>${p.mech?`<p style="margin:0">${p.mech}</p>`:''}`+done}}
+  else if(q.kind==='read'){const sc=answered?readScore(q):0;
+    h+=answered?`<div class="verdict ${readOk(q)?'ok':'no'}">${readOk(q)?'Correct':q.chosen===-1?'Time ran out':'Not quite'} · ${Math.round(sc*100)}% of fields<span class="pill">Structured read</span></div>`:`<div class="row" style="justify-content:space-between"><h2>Structured read: fill in each part</h2><span class="pill">Structured read</span></div>`;
+    h+=`<div class="rform">${q.f.map(x=>`<div class="rrow"><span class="lbl">${x.n}</span><div class="seg ${x.dx?'rdx':''}" data-rk="${x.k}">${x.o.map((o,i)=>`<button type="button" data-v="${i}" aria-pressed="${q.sel[x.k]===i}" ${answered?'disabled':''} class="${answered?(i===x.a?'rk-ok':q.sel[x.k]===i?'rk-no':''):''}">${o}</button>`).join('')}</div></div>`).join('')}</div>`;
+    if(!answered)h+=`<div class="row"><button class="btn primary" id="rdCheck" type="button" ${Object.keys(q.sel).length===q.f.length?'':'disabled'}>Check my read</button></div>`;
+    else{const M=q.rec.meta;h+=`<div class="note"><b>Model read:</b> ${M.rhy}, ${M.hr}/min${M.axis!=null?`, axis ${M.axis}°`:''}${M.pr!=null&&!['var','none'].includes(M.prq)?`, PR ${M.pr} ms`:''}${M.qrs?`, QRS ${M.qrs} ms`:''}${M.qtcB?`, QTc ${M.qtcB} ms`:''}. <b>${p.name}.</b> ${firstS(p.sig)}</div>`+done}}
+  else if(q.kind==='alarm'){const D_=leadData(q.rec,{filt:'mon',notch:true});
+    h+=`<div class="alarm"><span class="abadge">${q.lab}</span><span>Monitor alarm · 0.5–40 Hz monitor filter · leads ${q.chans.join(' and ')}</span></div><div class="vwrap"><div class="vscroll"><canvas id="alCv"></canvas></div></div>`;
+    if(!answered)h+=`<h2>Is this a true alarm?</h2><div class="qgrid long">${q.m.opts.map((o,i)=>`<button class="opt" data-mi="${i}"><kbd>${i+1}</kbd><span>${o}</span></button>`).join('')}</div>`;
+    else{const ok=q.chosen===q.m.a;h=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':q.chosen===-1?'Time ran out':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${q.m.opts[q.m.a].split(':')[0]}</span><span class="pill">Alarm triage</span></div>`+h+`<div class="note"><b>${q.rec.meta.rhy}.</b> ${ALWHY[q.aid]||''} Always look at the patient: a pulse and a talking patient settle most alarms.</div><div class="row"><button class="btn primary" id="qNext">Next (N)</button><button class="btn" id="alFull" type="button">Show the 12-lead</button></div>`}
+    card.innerHTML=h;const cv=$('#alCv',card);requestAnimationFrame(()=>drawStrip(cv,q.chans.map(c=>({data:D_[c],label:c})),{t0:0,dur:DUR,rowMM:26,foot:'25 mm/s · 10 mm/mV · monitor filter'}));
+    const fb=$('#alFull',card);if(fb)fb.addEventListener('click',()=>{$('#qViewer').hidden=false;qViewer.setRec(q.rec)});}
+  if(q.kind!=='alarm')card.innerHTML=h;
+  $$('.opt[data-mi]',card).forEach(b=>b.addEventListener('click',()=>choose(+b.dataset.mi)));
+  $$('[data-ld]',card).forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.ld,i=q.pick.indexOf(k);i>=0?q.pick.splice(i,1):q.pick.push(k);renderCard()}));
+  const lc_=$('#lqCheck',card);if(lc_)lc_.addEventListener('click',()=>choose(1));
+  $$('[data-wa]',card).forEach(b=>b.addEventListener('click',()=>{q.ans[q.i]=b.dataset.wa==='1';const stop=q.steps.findIndex(s=>s.fact),last=stop<0?q.steps.length-1:stop;if(q.i<last)q.i++;else q.i=last+1;renderCard()}));
+  $$('[data-rk]',card).forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;q.sel[g.dataset.rk]=+b.dataset.v;renderCard()}));
+  const rc=$('#rdCheck',card);if(rc)rc.addEventListener('click',()=>choose(1));
+  const nb=$('#qNext',card);if(nb)nb.addEventListener('click',next);const ab=$('#qAtlas',card);if(ab)ab.addEventListener('click',()=>openAtlas(q.pid,q.seed));return true}
+function extraOk(q){if(q.kind==='lead')return leadOk(q);if(q.kind==='read')return readOk(q);return q.chosen===q.m.a}
 
 /* ============ atlas: mechanisms page ============ */
 function buildMech(){const H=$('#aMech');H.innerHTML='';AX.draws.mech=[];
@@ -3148,7 +3265,7 @@ function setTab(t){$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',
 $$('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 buildAtlasList();
 LRN.applySettings();const h0=(location.hash||'').slice(1),hs=h0.split('/');if(['path','quiz','atlas','dash'].includes(hs[0]))setTab(hs[0]);else setTab('path');if(hs[0]==='atlas'&&SUBS[hs[1]])setSub(hs[1]);
-window.__ecg={LRN,MODS,stageQ,caseQ,SCN,SCNL,scnRec,newTrajQ,openEvo,diffSummary,GEN,generate,P,PM,CON,CIDX,makeMech,mkRand,DB:()=>DB,setTab,setSub,showAtlas,S,newQ,measOptions,showRec:(pid,seed)=>{const rec=generate(pid,seed??1);aViewer.setRec(rec);aViewer.setAnn(true);return{meta:rec.meta,ann:rec.ann.length}}};
+window.__ecg={showQ,leadQ,wctQ,readQ,alarmQ,wctFeat,wctSteps,leadSets,LRN,MODS,stageQ,caseQ,SCN,SCNL,scnRec,newTrajQ,openEvo,diffSummary,GEN,generate,P,PM,CON,CIDX,makeMech,mkRand,DB:()=>DB,setTab,setSub,showAtlas,S,newQ,measOptions,showRec:(pid,seed)=>{const rec=generate(pid,seed??1);aViewer.setRec(rec);aViewer.setAnn(true);return{meta:rec.meta,ann:rec.ann.length}}};
 })();
 
 </script>

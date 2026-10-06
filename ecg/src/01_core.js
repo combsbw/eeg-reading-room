@@ -32,7 +32,7 @@ function bandNoise(r,f1,f2,rms,len=N){const pad=f1>0&&f1<1.5?4000:300;let x=new 
    Limb leads are Einthoven/Goldberger projections; precordial leads project onto unit
    directions in (mostly) the horizontal plane, each with its own gain (proximity). */
 const LEADS=['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
-const LIMB=LEADS.slice(0,6),PREC=LEADS.slice(6);
+const LIMB=LEADS.slice(0,6),PREC=LEADS.slice(6),XL=['V4R','V7','V8','V9'],ALLL=LEADS.concat(XL);
 const LG=.85;
 const PV={V1:{d:nrm([-.32,.12,.94]),g:1.05},V2:{d:nrm([-.05,.12,1]),g:1.45},V3:{d:nrm([.35,.12,.93]),g:1.45},V4:{d:nrm([.7,.15,.7]),g:1.35},V5:{d:nrm([.93,.12,.36]),g:1.15},V6:{d:nrm([1,.1,.05]),g:.95},
   V4R:{d:nrm([-.75,.15,.62]),g:.9},V7:{d:nrm([.8,.1,-.6]),g:.7},V8:{d:nrm([.45,.1,-.9]),g:.6},V9:{d:nrm([.1,.1,-1]),g:.55}};
@@ -100,16 +100,17 @@ function deriveLeads(R,noise=true){const n=R.n,X=R.v[0],Y=R.v[1],Z=R.v[2],mx=R.o
   for(let i=0;i<n;i++){const x=X[i]*mx,I=LG*x,II=LG*(.5*x+.866*Y[i]);RA[i]=-(I+II)/3;LA[i]=(2*I-II)/3;LL[i]=(2*II-I)/3}
   const pv=R.opt.pv||{},pg=R.opt.pg||[1,1,1,1,1,1];
   PREC.forEach((k,j)=>{const d=pv[k]||PV[k].d,g=PV[k].g*pg[j],a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=g*(d[0]*X[i]*mx+d[1]*Y[i]+d[2]*Z[i]);L[k]=a});
+  XL.forEach(k=>{const d=PV[k].d,g=PV[k].g,a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=g*(d[0]*X[i]*mx+d[1]*Y[i]+d[2]*Z[i]);L[k]=a});
   const E={RA,LA,LL};if(R.ela.RA)for(let i=0;i<n;i++)RA[i]+=R.ela.RA[i];if(R.ela.LA)for(let i=0;i<n;i++)LA[i]+=R.ela.LA[i];if(R.ela.LL)for(let i=0;i<n;i++)LL[i]+=R.ela.LL[i];
   const inp={RA,LA,LL};if(R.opt.swap){const[a,b]=R.opt.swap,src=k=>k==='RL'?LL:E[k];if(a!=='RL')inp[a]=src(b);if(b!=='RL')inp[b]=src(a)}
   const ra=inp.RA,la=inp.LA,ll=inp.LL,I=new Float32Array(n),II=new Float32Array(n),III=new Float32Array(n),aVR=new Float32Array(n),aVL=new Float32Array(n),aVF=new Float32Array(n);
   for(let i=0;i<n;i++){I[i]=la[i]-ra[i];II[i]=ll[i]-ra[i];III[i]=ll[i]-la[i];aVR[i]=ra[i]-(la[i]+ll[i])/2;aVL[i]=la[i]-(ra[i]+ll[i])/2;aVF[i]=ll[i]-(ra[i]+la[i])/2;
-    const w=(ra[i]+la[i]+ll[i])/3;if(w)PREC.forEach(k=>L[k][i]-=w)}
+    const w=(ra[i]+la[i]+ll[i])/3;if(w){PREC.forEach(k=>L[k][i]-=w);XL.forEach(k=>L[k][i]-=w)}}
   Object.assign(L,{I,II,III,aVR,aVL,aVF});
   for(const k in R.loc)if(L[k]){const a=L[k],b=R.loc[k];for(let i=0;i<n;i++)a[i]+=b[i]}
   if(noise&&R.opt.noise!==0){const r=mkRand(R.seed*7+11),nz=R.opt.noise??1,emg=(R.opt.emg??.009)*nz,wan=(R.opt.wander??.05)*nz;
     const f1=r.r(.16,.3),p1=r.r(0,6.28);
-    LEADS.forEach(k=>{const a=L[k],e=bandNoise(r,25,150,emg),f2=r.r(.3,.7),p2=r.r(0,6.28),a1=wan*r.r(.3,1),a2=wan*r.r(.1,.4),a3=r.r(.001,.003);
+    ALLL.forEach(k=>{const a=L[k],e=bandNoise(r,25,150,emg),f2=r.r(.3,.7),p2=r.r(0,6.28),a1=wan*r.r(.3,1),a2=wan*r.r(.1,.4),a3=r.r(.001,.003);
       for(let i=0;i<n;i++){const t=i/FS;a[i]+=e[i]+a1*Math.sin(2*Math.PI*f1*t+p1+(k.length*.7))+a2*Math.sin(2*Math.PI*f2*t+p2)+a3*Math.sin(2*Math.PI*60*t)}})}
   return L}
 
@@ -118,7 +119,7 @@ function template(R){const tm=R.tm;if(!tm)return null;const T=newRec(R.seed,700)
   const t0=.45;if(tm.pm&&tm.pr!=null)tm.pm.forEach(b=>addB(T,t0-tm.pr,b));addV(T,t0,tm.vm);
   const L=deriveLeads(T,false);return{L,t0,vm:tm.vm,pr:tm.pr,n:700}}
 function measure(R){const tp=template(R);if(!tp)return null;const{L,t0,vm}=tp,i0=Math.round((t0+vm.on)*FS),i1=Math.round((t0+vm.off)*FS),ib=Math.max(0,i0-8);
-  const out={};LEADS.forEach(k=>{const a=L[k],b=a[ib];let mx=-9,mn=9,area=0;for(let i=i0;i<=i1;i++){const v=a[i]-b;mx=Math.max(mx,v);mn=Math.min(mn,v);area+=v}
+  const out={};ALLL.forEach(k=>{const a=L[k];if(!a)return;const b=a[ib];let mx=-9,mn=9,area=0;for(let i=i0;i<=i1;i++){const v=a[i]-b;mx=Math.max(mx,v);mn=Math.min(mn,v);area+=v}
     const j=a[i1]-b,st40=a[Math.min(tp.n-1,i1+20)]-b,st60=a[Math.min(tp.n-1,i1+30)]-b,st80=a[Math.min(tp.n-1,i1+40)]-b;let tmax=-9,tmin=9;const te=Math.round((t0+vm.qt)*FS);for(let i=i1+40;i<=Math.min(tp.n-1,te);i++){const v=a[i]-b;tmax=Math.max(tmax,v);tmin=Math.min(tmin,v)}
     let qd=0,qa=0;for(let i=i0;i<=i1;i++){const v=a[i]-b;if(v<-.015){qd++;qa=Math.min(qa,v)}else if(v>.015)break}
     let pa=0,pmin=0;if(tp.pr!=null){const ps=Math.round((t0-tp.pr)*FS);for(let i=Math.max(0,ps);i<i0;i++){pa=Math.max(pa,a[i]-b);pmin=Math.min(pmin,a[i]-b)}}

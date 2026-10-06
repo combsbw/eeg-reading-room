@@ -50,3 +50,22 @@ details summary{margin-top:4px}
 .tpl{font-weight:700;font-family:var(--font-mono);display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft)}
 .tphead .tpfull{margin-left:auto}
 .qgrid.long{grid-template-columns:1fr}
+.lgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-width:560px}
+.lbtn{border:2px solid var(--line);background:var(--panel);border-radius:8px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.lbtn b{font-size:15px}.lbtn span{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.lbtn.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
+.lbtn.hit{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%,var(--panel))}
+.lbtn.miss{border-color:var(--mark);border-style:dashed}
+.lbtn.extra{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--panel))}
+.lk{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:2px solid var(--line)}
+.lk.hit{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%,var(--panel))}.lk.miss{border-color:var(--mark);border-style:dashed}.lk.extra{border-color:var(--bad)}
+.wsteps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:12px}.wsteps li{line-height:1.45}
+.wok,.wno{margin-top:4px;padding:4px 8px;border-radius:6px;font-size:13px}.wok{background:color-mix(in srgb,var(--good) 14%,var(--panel))}.wno{background:color-mix(in srgb,var(--bad) 12%,var(--panel))}
+.rform{display:flex;flex-direction:column;gap:8px}
+.rrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;align-items:center}
+.rrow .seg{flex-wrap:wrap}.rrow .seg.rdx{display:grid;grid-template-columns:1fr 1fr}
+.rrow .seg button.rk-ok{background:color-mix(in srgb,var(--good) 22%,var(--panel));color:var(--ink)}.rrow .seg button.rk-no{background:color-mix(in srgb,var(--bad) 16%,var(--panel));color:var(--ink)}
+.alarm{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+.abadge{background:var(--bad);color:#fff;font-weight:700;font-family:var(--font-mono);letter-spacing:.06em;padding:6px 12px;border-radius:6px;animation:ablink 1s steps(2) infinite}
+@keyframes ablink{50%{opacity:.55}}
+@media (max-width:560px){.rrow{grid-template-columns:1fr}.rrow .seg.rdx{grid-template-columns:1fr}}

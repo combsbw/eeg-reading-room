@@ -8,11 +8,12 @@ function computeMeta(R){const q=R.ev.q.filter(x=>x.t>=0&&x.t<DUR&&x.k!=='s').map
   if(!M.prq)M.prq=M.pr==null?'none':M.pr<120?'short':M.pr>200?'long':'normal'}
 function stThr(k){return k==='V2'||k==='V3'?.15:.1}
 function autoST(R){if(!R.ms)return;const up=[],dn=[];LEADS.forEach(k=>{const s=R.ms.leads[k].st40;if(s>=stThr(k))up.push(k);else if(s<=-.05)dn.push(k)});
-  if(up.length)hl(R,up,'ST elevation','a');if(dn.length)hl(R,dn,'ST depression','b')}
+  if(up.length)hl(R,up,'ST elevation','a');if(dn.length)hl(R,dn,'ST depression','b');
+  const xu=XL.filter(k=>R.ms.leads[k]&&R.ms.leads[k].st40>=(k==='V4R'?.1:.05));if(xu.length)hl(R,xu,'ST elevation in added leads (V4R ≥ 1 mm, V7–V9 ≥ 0.5 mm)','a')}
 function generate(pid,seed){const R=newRec(seed>>>0);GEN[pid](R);R.L=deriveLeads(R);R.ms=measure(R);computeMeta(R);if(R.autoST)autoST(R);R.pid=pid;R._c={};return R}
 
 /* ============ 12-lead viewer ============ */
-const LAYOUT={'3x4':[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6']],'6x2':[['I','V1'],['II','V2'],['III','V3'],['aVR','V4'],['aVL','V5'],['aVF','V6']],'12':LEADS.map(l=>[l])};
+const LAYOUT={'3x4':[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6']],'15':[['I','aVR','V1','V4'],['II','aVL','V2','V5'],['III','aVF','V3','V6'],['V4R','V7','V8','V9']],'6x2':[['I','V1'],['II','V2'],['III','V3'],['aVR','V4'],['aVL','V5'],['aVF','V6']],'12':LEADS.map(l=>[l])};
 const FILT={diag:{hp:.05,lp:150,lab:'0.05–150 Hz'},st:{hp:.05,lp:40,lab:'0.05–40 Hz'},mon:{hp:.5,lp:40,lab:'0.5–40 Hz'}};
 const DEFV={fmt:'3x4',gain:10,speed:25,filt:'diag',notch:false,strip:'II'};
 function leadData(rec,v){const key=v.filt+'|'+v.notch;if(rec._c[key])return rec._c[key];const f=FILT[v.filt],o={};
@@ -23,7 +24,7 @@ function Viewer(host,opt={}){
   const self={rec:null,v:{...DEFV,...(opt.v||{})},ann:false,meas:null,overlay:null,cal:false};
   host.innerHTML='';const wrap=el('div','vwrap');
   wrap.innerHTML=(opt.tools===false?'':`<div class="vtools">
-  <label>Layout <select data-k="fmt"><option value="3x4">3 × 4 + rhythm</option><option value="6x2">6 × 2 + rhythm</option><option value="12">12 × 1</option></select></label>
+  <label>Layout <select data-k="fmt"><option value="3x4">3 × 4 + rhythm</option><option value="15">16-lead (+ V4R, V7–V9)</option><option value="6x2">6 × 2 + rhythm</option><option value="12">12 × 1</option></select></label>
   <label>Rhythm strip <select data-k="strip">${LEADS.map(l=>`<option>${l}</option>`).join('')}</select></label>
   <label>Gain <select data-k="gain"><option value="5">5 mm/mV</option><option value="10">10 mm/mV</option><option value="20">20 mm/mV</option></select></label>
   <label>Speed <select data-k="speed"><option value="25">25 mm/s</option><option value="50">50 mm/s</option></select></label>
@@ -44,7 +45,7 @@ function Viewer(host,opt={}){
   self.setOverlay=f=>{self.overlay=f;self.draw()};
   self.draw=()=>{if(!self.rec)return;const rec=self.rec,v=self.v,D=leadData(rec,v),C=cssv(),dpr=window.devicePixelRatio||1;
     const lay=LAYOUT[v.fmt],cols=lay[0].length,strip=v.fmt!=='12'&&opt.strip!==false,nr=lay.length+(strip?1:0);
-    const s=v.speed,g=v.gain,rowMM=v.fmt==='12'?{5:13,10:19,20:32}[g]:{5:17,10:27,20:44}[g],LM=3+.2*s+2,Wmm=LM+DUR*s+2;
+    const s=v.speed,g=v.gain,rowMM=v.fmt==='12'?{5:13,10:19,20:32}[g]:v.fmt==='15'?{5:15,10:24,20:40}[g]:{5:17,10:27,20:44}[g],LM=3+.2*s+2,Wmm=LM+DUR*s+2;
     // annotation label levels (spans and points)
     const anns=self.ann?rec.ann:[],labs=anns.filter(a=>a.type!=='hl');let lev=0;const ends=[];
     const TMbase=4;const cw=Math.max(sc.clientWidth||700,320),pm=Math.max(opt.minPm??2.9,(cw-2)/Wmm);
@@ -84,7 +85,8 @@ function Viewer(host,opt={}){
     if(self.meas){const[a,b]=self.meas,xa=X(a.t),xb=X(b.t);ctx.strokeStyle=C.mk;ctx.lineWidth=1.3;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(xa,TOPpx);ctx.lineTo(xa,H);ctx.moveTo(xb,TOPpx);ctx.lineTo(xb,H);ctx.stroke();
       ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(xa,a.y);ctx.lineTo(xb,a.y);ctx.stroke();if(Math.abs(b.y-a.y)>4){ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(xb-14,b.y);ctx.lineTo(xb+14,b.y);ctx.moveTo(xb,a.y);ctx.lineTo(xb,b.y);ctx.stroke();ctx.setLineDash([])}}
     // legend for lead highlights
-    if(hls.length){leg.hidden=false;leg.innerHTML=hls.map(a=>`<span class="lg ${a.k==='b'?'b':'a'}"><i></i>${a.txt}: <b>${a.leads.join(', ')}</b></span>`).join('')}else leg.hidden=true};
+    const vis=new Set(lay.flat().concat(strip?[v.strip]:[])),hv=hls.map(a=>({...a,leads:a.leads.filter(k=>vis.has(k))})).filter(a=>a.leads.length);
+    if(hv.length){leg.hidden=false;leg.innerHTML=hv.map(a=>`<span class="lg ${a.k==='b'?'b':'a'}"><i></i>${a.txt}: <b>${a.leads.join(', ')}</b></span>`).join('')}else leg.hidden=true};
   const pos=e=>{const b=cv.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top}};
   const tOf=x=>clamp((x/G.pm-G.LM)/G.s,0,DUR);
   const show=()=>{if(!self.meas)return;const[a,b]=self.meas,dt=Math.abs(b.t-a.t),dv=(a.y-b.y)/(G.g*G.pm);read.textContent=dt<.01?'':`Δt ${(dt*1000).toFixed(0)} ms · ${(dt*25).toFixed(1)} small boxes · rate ${(60/dt).toFixed(0)}/min${Math.abs(dv)>.04?` · ΔV ${dv.toFixed(2)} mV (${(dv*10).toFixed(1)} mm)`:''}`};

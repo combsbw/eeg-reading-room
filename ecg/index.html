@@ -165,6 +165,9 @@ tbody tr[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,var
 .pill.cond{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
 .pill.isch{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
 .pill.struct{color:#8a5bd0;border-color:color-mix(in srgb,#8a5bd0 45%,var(--line))}
+.pill.pace{color:#b0612a;border-color:color-mix(in srgb,#b0612a 45%,var(--line))}
+.pill.chan{color:#c23d7a;border-color:color-mix(in srgb,#c23d7a 45%,var(--line))}
+.pill.mimic{color:var(--muted)}
 .pill.meta{color:#1d8686;border-color:color-mix(in srgb,#1d8686 45%,var(--line))}
 .pill.mimic{color:var(--muted)}
 .axg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
@@ -196,6 +199,11 @@ details summary{margin-top:4px}
 .cdcur{position:absolute;left:0;top:0;width:2px;background:var(--mark);pointer-events:none;opacity:.85}
 #cdSvg path,#cdSvg ellipse,#cdSvg circle{transition:fill .05s}
 .corg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.corg{grid-template-columns:1fr}}
+.chip.con{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.chip.con .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.chip.con .dot.cell,.dot.cell{background:#1d8686}.chip.con .dot.cond,.dot.cond{background:var(--warn)}.chip.con .dot.flow,.dot.flow{background:var(--bad)}.chip.con .dot.struct,.dot.struct{background:#8a5bd0}.chip.con .dot.sys,.dot.sys{background:var(--accent)}
+.qgrid.long{grid-template-columns:1fr}
+.qgrid.long .opt span{font-size:14px;line-height:1.45}
 
 </style>
 </head>
@@ -219,7 +227,7 @@ details summary{margin-top:4px}
     <div class="card stack" id="qSetup">
       <div class="row">
         <div class="row"><span class="lbl">Mode</span><div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (15)</button></div></div>
-        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
+        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
         <div class="row"><span class="lbl">Difficulty</span><div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
       </div>
       <div class="row" id="catChips"><span class="lbl">Include</span></div>
@@ -247,7 +255,7 @@ details summary{margin-top:4px}
 
     <div id="qIntro" class="card">
       <h2>Pick a mode and press Start</h2>
-      <p style="margin-top:6px;color:var(--muted);max-width:74ch">Diagnosis questions ask for the main finding and follow up with a culprit-artery or management question where it matters. Measurement questions ask for rate, regularity, axis, PR, QRS or QTc, computed from the tracing itself. Practice adapts to the patterns you miss; Exam runs fifteen questions and reviews them at the end. Change the layout, gain, speed or filter on any tracing, and drag across it to use calipers.</p>
+      <p style="margin-top:6px;color:var(--muted);max-width:74ch">Diagnosis questions ask for the main finding and follow up with a culprit-artery or management question where it matters. Measurement questions ask for rate, regularity, axis, PR, QRS or QTc, computed from the tracing itself. Mechanism questions ask why the tracing looks the way it does, and which other patterns share that mechanism. Practice adapts to the patterns you miss; Exam runs fifteen questions and reviews them at the end. Change the layout, gain, speed or filter on any tracing, and drag across it to use calipers.</p>
     </div>
 
     <div id="qStage" class="stack" hidden>
@@ -275,6 +283,7 @@ details summary{margin-top:4px}
           </div>
         </div>
         <div id="aViewer"></div>
+        <div class="card stack" id="aWhy"></div>
         <div class="card two" id="aInfo"></div>
       </div>
     </div>
@@ -608,8 +617,146 @@ GEN.artifact=R=>{const r=R.r,hr=r.r(68,88),pr=r.r(.14,.17),vm=sinMorph(r,{qt:qtF
   for(let i=0;i<N;i++){const t=i/FS;ph+=2*Math.PI*fr*(1+.12*m[i])/FS;if(t>t0&&t<t1){const w=Math.min(1,(t-t0)/.25,(t1-t)/.25);a[i]=w*(.62*(1+.35*e[i])*Math.sin(ph)+.12*Math.sin(3*ph+1))}}R.ela.RA=a;
   R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with motion artifact';span(R,t0,t1,'Artifact: narrow QRS complexes keep marching through');hl(R,['III'],'Lead III clean: the right-arm electrode is moving');hl(R,['I','II','aVR'],'Leads that use the right arm','b')};
 
+/* ============ pattern generators, set 2: specialty, staged electrolytes, pacing, technical ============ */
+const stB=(A,d,qt,off=.095)=>{const tp=qt-.097;return{sh:'p',a:off-.012,ra:.03,b:tp,fb:qt-tp,A,d}};
+const spike=(A,d)=>({sh:'sp',c:0,A,d:d||nrm([.35,-.4,-.85])});
+function irregular(R,hrMean,lo,hi,mk,o={}){const r=R.r,rr=60/hrMean;let t=-r.r(0,.5),i=0;while(t<DUR+.6){addV(R,t,mk(i,t));t+=Math.max(o.min??.2,rr*(lo+(hi-lo)*r.u()));i++}}
+function fwaves(R,A){const r=R.r;addCont(R,bandNoise(r,4,9,A),nrm([-.3,.35,.9]));addCont(R,bandNoise(r,4,9,A*.6),nrm([.4,-.3,.4]))}
+function sawtooth(R,cyc,A,d){const f=new Float64Array(N),F=[];let ph=R.r.u();for(let i=0;i<N;i++){ph+=1/(cyc*FS);if(ph>=1){ph-=1;F.push(i/FS)}f[i]=(ph<.72?ph/.72:1-(ph-.72)/.28)-.5}
+  const fs=Float32Array.from(ff(f,bq('lp',22,.707)));for(let i=0;i<N;i++)fs[i]*=A;addCont(R,fs,d);let tf=F[0]-cyc;while(tf>-1.2){F.unshift(tf);tf-=cyc}let tl=F[F.length-1];while(tl<DUR+.8){tl+=cyc;F.push(tl)}return F}
+/* ---- ischemia: subtle occlusion and equivalents ---- */
+GEN.hyperT=R=>{const r=R.r,hr=r.r(70,95),pr=r.r(.13,.17),vm=corMorph(OCC.mLAD.segs,occStage(r.r(10,16),null),qtF(hr,.41)),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';
+  hl(R,['V2','V3','V4'],'Broad, bulky T waves out of proportion to the QRS');hl(R,['V1','V2'],'Minimal ST elevation','b')};
+GEN.saflag=R=>{const r=R.r,hr=r.r(72,98),pr=r.r(.13,.17),qt=qtF(hr,.41),d=nrm([.38,-.92,0]),vm=V({axis:r.r(40,65),qt,stA:r.r(.28,.32),std:d,stra:.025,t:[{c:qt-.097,wl:.068,wr:.042,A:.4,d:fv(43,.6)},{c:qt-.12,wl:.08,wr:.055,A:.3,d}],loc:[{sh:'p',a:.09,ra:.025,b:qt-.12,fb:.1,A:.24,lm:{V2:1,V1:.3}}]}),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
+GEN.swirl=R=>{const r=R.r,hr=r.r(75,100),pr=r.r(.13,.17),qt=qtF(hr,.42),d=nrm([-.28,-.72,.64]),vm=V({axis:r.r(40,70),qt,stA:r.r(.26,.32),std:d,stra:.025,t:[{c:qt-.097,wl:.068,wr:.042,A:.35,d:fv(43,.6)},{c:qt-.12,wl:.08,wr:.055,A:.35,d}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
+GEN.aslanger=R=>{const r=R.r,hr=r.r(70,95),pr=r.r(.14,.18),qt=qtF(hr,.42),vm=V({axis:r.r(50,75),qt,stA:r.r(.2,.25),std:nrm([-.25,1,-.05]),stra:.025,xst:[stB(-.2,nrm([.65,.6,.3]),qt)],tA:.42}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['III'],'ST elevation in III only');hl(R,['V4','V5','V6'],'ST depression with upright T','b')};
+GEN.rvmi=R=>{const r=R.r,hr=r.r(48,66),pr=r.r(.19,.24),vm=corMorph(occSegs('pRCA','right',false),occStage(r.r(60,240),null),qtF(hr,.42)),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus bradycardia';R.autoST=1;hl(R,['V1'],'ST elevation in V1: right ventricle involved','b')};
+GEN.stemirbbb=R=>{const r=R.r,hr=r.r(78,105),pr=r.r(.14,.18),qt=qtF(hr,.43),d=nrm([.45,-.35,.8]),vm=rbbbM(r,{qt,stA:r.r(.28,.34),std:d,stra:.025,t:[{c:qt-.11,wl:.08,wr:.05,A:.45,d}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with RBBB';R.autoST=1;hl(R,['V1'],'RBBB: rsR′ (new)','b')};
+GEN.shark=R=>{const r=R.r,hr=r.r(90,120),pr=r.r(.13,.16),qt=qtF(hr,.44),d=nrm([.3,-.15,.95]),vm=V({axis:r.r(30,60),s:1.3,qt,stA:r.r(.62,.78),std:d,stra:.012,stb:qt-.16,t:[{c:qt-.13,wl:.05,wr:.06,A:.2,d}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus tachycardia';R.autoST=1;hl(R,['V2','V3','V4'],'QRS, ST and T fused into one triangle','b')};
+GEN.antsubtle=R=>{const r=R.r,hr=r.r(65,90),pr=r.r(.13,.17),qt=qtF(hr,.41),d=nrm([.2,-.05,1]),vm=V({axis:r.r(40,70),qt,stA:r.r(.11,.14),std:d,stra:.05,xst:[stB(-.05,nrm([-.2,1,0]),qt)],t:[{c:qt-.1,wl:.072,wr:.048,A:.62,d:nrm([.35,.1,.9])}],loc:[{c:.062,wl:.012,A:.28,lm:{V2:1,V3:.85}}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V2','V3'],'No S wave and no J notch (terminal QRS distortion)');hl(R,['III','aVF'],'Subtle reciprocal depression','b')};
+GEN.takotsubo=R=>{const r=R.r,hr=r.r(78,100),pr=r.r(.13,.17),qt=r.r(.47,.52)*Math.cbrt(60/hr),d=nrm([.55,.3,.8]),vm=V({axis:r.r(40,70),qt,tfix:1,stA:.04,std:d,t:[{c:qt-.13,wl:.08,wr:.065,A:-.75,d}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V2','V3','V4','V5','V6','I','aVL','II'],'Deep, wide T inversion with long QT, no Q waves')};
+/* ---- tachycardias, wide and narrow ---- */
+GEN.svtab=R=>{const r=R.r,hr=r.r(165,205),lb=r.chance(.5),qt=qtF(hr),vm=lb?lbbbM(r,{qt}):rbbbM(r,{qt});sinus(R,{hr,vm,jit:.003});R.tm={vm,pm:null,pr:null};R.meta.rhy=`SVT with ${lb?'LBBB':'RBBB'} aberrancy`;R.meta.prq='none';R.meta.variant=lb?'LBBB':'RBBB';
+  hl(R,lb?['V1','V6']:['V1','I','V6'],lb?'Typical LBBB shape: rapid initial deflection':'Typical RBBB shape: rsR′, slurred S')};
+const wpwM=(r,f,dir)=>{const d=dir||nrm([-.35,.5,.8]);return V({q:[{c:.07,wl:.03*(.7+.8*f),wr:.014,A:1.3*f+.2,d},{c:.098+.02*f,wl:.016+.01*f,A:1.3*(1-.6*f),d:fv(60,-.25)},{c:.125+.02*f,wl:.012,A:.3*(1-.5*f),d:nrm([-.35,-.55,-.75])}],qt:.32,td:neg(d),tA:.25+.15*f})};
+GEN.preaf=R=>{const r=R.r,hr=r.r(190,250),mk=[.25,.5,.75,1].map(f=>wpwM(r,f));irregular(R,hr,.6,1.45,()=>mk[Math.floor(r.u()*4)],{min:.19});fwaves(R,.04);
+  R.tm={vm:mk[2],pm:null,pr:null};R.meta.rhy='Pre-excited atrial fibrillation';R.meta.reg='irr';R.meta.prq='none';R.meta.noMeas=['qtc','axis','qrs'];hl(R,['II','V1'],'Fast, broad, irregular, with QRS width changing beat to beat')};
+GEN.antidromic=R=>{const r=R.r,hr=r.r(200,240),d=nrm([-.35,.5,.8]),vm=V({q:[{c:.065,wl:.038,wr:.03,A:1.35,d},{c:.13,wl:.028,A:.45,d:nrm([.2,.6,.4])}],qt:.26,t:[{c:.2,wl:.04,wr:.035,A:.45,d:neg(d)}],kind:'x'});
+  sinus(R,{hr,vm,jit:.002});R.tm={vm,pm:null,pr:null};R.meta.rhy='Antidromic AVRT (pre-excited tachycardia)';R.meta.prq='none';hl(R,['II','V1'],'Regular, very fast, fully pre-excited QRS')};
+GEN.fascvt=R=>{const r=R.r,hr=r.r(150,185),qt=Math.min(.34,60/hr*.9),vm=V({axis:r.r(-75,-55),s:1.12,sepd:nrm([-.2,.85,.45]),sep:1.2,z:-.3,xq:[{c:.095,wl:.018,A:.7,d:nrm([-.6,.1,.78])}],term:.3,qt,td:nrm([.65,.45,-.45]),tA:.35,kind:'v'}),pm=nP(r);
+  sinus(R,{hr,vm,jit:.003});let tp=-r.r(0,.8);const pa=60/r.r(70,90);while(tp<DUR){addP(R,tp,pm,{cond:false});tp+=pa}R.tm={vm,pm:null,pr:null};R.meta.rhy='Fascicular VT (idiopathic, left posterior fascicle)';R.meta.prq='none';
+  hl(R,['V1'],'RBBB-like, relatively narrow');hl(R,['II','III','aVF'],'Superior (left) axis','b')};
+GEN.rvotvt=R=>{const r=R.r,hr=r.r(160,200),qt=Math.min(.34,60/hr*.9),vm=V({q:[{c:.05,wl:.03,A:1.4,d:nrm([.15,.85,-.5])},{c:.112,wl:.025,A:.7,d:nrm([.45,.6,-.65])}],qt,t:[{c:qt-.09,wl:.06,wr:.04,A:.32,d:nrm([-.3,-.75,.55])}],kind:'v'}),pm=nP(r);
+  sinus(R,{hr,vm,jit:.003});let tp=-r.r(0,.8);const pa=60/r.r(70,90);while(tp<DUR){addP(R,tp,pm,{cond:false});tp+=pa}R.tm={vm,pm:null,pr:null};R.meta.rhy='Right ventricular outflow tract VT';R.meta.prq='none';hl(R,['V1'],'LBBB-like');hl(R,['II','III','aVF'],'Inferior axis: tall R inferiorly','b')};
+GEN.bidir=R=>{const r=R.r,hr=r.r(140,170),qt=Math.min(.34,60/hr*.88),a=V({axis:-60,s:1.15,amp:1.35,sepd:nrm([-.2,.85,.45]),sep:1.3,z:-.3,xq:[{c:.098,wl:.018,A:.7,d:nrm([-.6,.1,.78])}],term:.3,qt,td:nrm([.6,.4,-.4]),tA:.32,kind:'v'}),b=V({axis:115,s:1.15,amp:1.35,sepd:nrm([.45,-.75,.3]),sep:1.3,z:-.3,xq:[{c:.098,wl:.018,A:.7,d:nrm([-.6,.1,.78])}],term:.3,qt,td:nrm([.3,-.5,-.4]),tA:.32,kind:'v'});
+  sinus(R,{hr,vm:i=>i%2?b:a,jit:.003});R.tm={vm:a,pm:null,pr:null};R.meta.rhy='Bidirectional VT';R.meta.prq='none';R.meta.reg='reg';R.meta.noMeas=['axis'];hl(R,['II','aVF','I'],'QRS axis flips every beat')};
+GEN.pmvt=R=>{const r=R.r,hr=r.r(75,95),rr=60/hr,qt=qtF(hr,.41),vm=V({axis:55,qt,stA:-.18,std:fv(55,.3)}),pm=nP(r),pr=.15;let t=r.r(.2,.35);for(let k=0;k<3;k++){const pi=addP(R,t-pr,pm);addV(R,t,vm,pi);t+=rr}
+  const ts=t-rr+qt*.75;let tt=ts,i=0;const base=nrm([.3,.85,.4]),nb=Math.floor(r.r(16,22));while(i<nb){const a=(.7+.5*r.u())*(r.u()<.5?1:-1),d=rot(base,r.r(-90,90)),A=1.4*a;addV(R,tt,{q:[{c:.05,wl:.034,A,d},{c:.13,wl:.036,A:-.5*A,d}],st:[],t:[],loc:[],kind:'v',on:0,off:.2,qt:.22,qrsd:.2});tt+=r.r(.19,.26);i++}
+  span(R,ts,tt,'Polymorphic VT');let t3=tt+r.r(.9,1.3);while(t3<DUR+.6){const p2=addP(R,t3-pr,pm);addV(R,t3,vm,p2);t3+=rr}R.tm={vm,pm,pr};R.meta.rhy='Polymorphic VT with a normal QT';R.meta.noMeas=['rate','axis','qrs','pr','qtc'];R.meta.prq='none';hl(R,['II','V5'],'Normal QT with ischemic ST depression on sinus beats','b')};
+GEN.vflutter=R=>{const r=R.r,hr=r.r(250,300),rr=60/hr,d=nrm([.3,.85,.35]),vm={q:[{c:rr*.3,wl:rr*.2,A:1.35,d},{c:rr*.8,wl:rr*.2,A:-1.2,d}],st:[],t:[],loc:[],kind:'v',on:0,off:rr,qt:rr,qrsd:rr};sinus(R,{hr,vm,jit:.002});R.tm=null;R.meta.rhy='Ventricular flutter';R.meta.noMeas=['axis','qrs','pr','qtc'];R.meta.prq='none';hl(R,['II','V2'],'Regular sine wave at about 300/min, no isoelectric line')};
+GEN.atypflut=R=>{const r=R.r,cyc=1/r.r(4,4.8),F=sawtooth(R,cyc,r.r(.32,.38),nrm([.1,.85,-.45])),mode=r.pick([2,2,3,4]),hr=60/(cyc*mode),vm=sinMorph(r,{qt:qtF(Math.min(hr,140))});
+  for(let i=Math.floor(r.u()*mode);i<F.length;i+=mode)addV(R,F[i]+.24,vm);R.tm={vm,pm:null,pr:null};R.meta.rhy=`Atypical (clockwise) atrial flutter, ${mode}:1`;R.meta.prq='none';R.meta.arate=Math.round(60/cyc);hl(R,['II','III','aVF'],'Upright (positive) flutter waves');hl(R,['V1'],'Negative flutter waves','b')};
+GEN.eat=R=>{const r=R.r,hr=r.r(130,170),pr=r.r(.13,.17),pd=r.pick([nrm([-.6,.55,.35]),nrm([.2,-.9,.3])]),pm=Pw('ect',.15,pd),vm=sinMorph(r,{qt:qtF(hr)});sinus(R,{hr,pr,vm,pm,jit:.004});R.tm={vm,pm,pr};R.meta.rhy='Ectopic atrial tachycardia';
+  hl(R,pd[0]<0?['I','aVL']:['II','III','aVF'],pd[0]<0?'P negative in I and aVL (left atrial focus)':'P inverted inferiorly (low atrial focus)')};
+GEN.atblock=R=>{const r=R.r,hra=r.r(160,200),pp=60/hra,pr=r.r(.16,.2),pm=Pw('ect',.14,nrm([.45,.75,.35])),vm=sinMorph(r,{qt:qtF(hra/2)});let t=-r.r(0,pp),k=0;
+  while(t<DUR+.5){if(k%2===0){const pi=addP(R,t,pm);addV(R,t+pr,vm,pi)}else addP(R,t,pm,{cond:false});t+=pp;k++}R.tm={vm,pm,pr};R.meta.rhy='Atrial tachycardia with 2:1 block';R.meta.arate=Math.round(hra);
+  R.ev.p.filter(p=>p.t>.4&&p.t<4).forEach(p=>pt(R,p.t+.04,'P'));hl(R,['II','V1'],'Discrete P waves at 150–250/min with a flat baseline between them')};
+GEN.wap=R=>{const r=R.r,hr=r.r(62,92),rr=60/hr,vm=sinMorph(r,{qt:qtF(hr)}),dirs=[nrm([.3,.9,.4]),nrm([-.35,.9,.25]),nrm([.45,-.55,.5]),nrm([.05,.95,-.35])];let t=-r.r(0,.5);
+  while(t<DUR+.6){const k=Math.floor(r.u()*dirs.length),pr=r.r(.11,.2);addP(R,t-pr,Pw('ect',r.r(.1,.18),dirs[k]),{k:'e'+k});addV(R,t,vm,R.ev.p.length-1);t+=rr*r.r(.85,1.2)}R.tm={vm,pm:nP(r),pr:.15};R.meta.rhy='Wandering atrial pacemaker';R.meta.reg='irr';R.meta.prq='var';hl(R,['II'],'Three or more P shapes, rate under 100')};
+GEN.orthoavrt=R=>{const r=R.r,hr=r.r(170,215),qt=qtF(hr),ax=r.r(40,70),a=V({axis:ax,qt,stA:-.08,std:fv(55,-.3),amp:1.08}),b=V({axis:ax,qt,stA:-.08,std:fv(55,-.3),amp:.8}),pm=Pw('retro',.12),rp=r.r(.1,.13);
+  sinus(R,{hr,vm:i=>i%2?b:a,jit:.002});R.ev.q.slice().forEach(q=>addP(R,q.t+rp,pm,{k:'r'}));R.tm={vm:a,pm:null,pr:null};R.meta.rhy='Orthodromic AVRT';R.meta.prq='none';hl(R,['II','III','aVF'],'Retrograde P in the ST segment (RP over 70 ms)');hl(R,['V2','V3'],'QRS alternans','b')};
+GEN.pjrt=R=>{const r=R.r,hr=r.r(120,165),pr=r.r(.11,.14),pm=Pw('retro',.14),vm=sinMorph(r,{qt:qtF(hr)});sinus(R,{hr,pr,vm,pm,jit:.003});R.ev.p.forEach(p=>p.k='r');R.tm={vm,pm,pr};R.meta.rhy='Long-RP tachycardia (PJRT)';
+  const b=beatNear(R,5);span(R,b.t-pr,b.t,'Inverted P closer to the next QRS (RP > PR)');hl(R,['II','III','aVF'],'Inverted P waves')};
+GEN.accjunct=R=>{const r=R.r,hr=r.r(68,100),vm=sinMorph(r,{qt:qtF(hr)}),pm=Pw('retro',.12),before=r.chance(.5);sinus(R,{hr,vm,jit:.006});R.ev.q.slice().forEach(q=>addP(R,q.t+(before?-.07:.09),pm,{k:'r'}));
+  R.tm={vm,pm:before?pm:null,pr:before?.07:null};R.meta.rhy='Accelerated junctional rhythm';R.meta.prq=before?'short':'none';hl(R,['II','III','aVF'],'Retrograde P, narrow QRS, rate 60–100')};
+GEN.sinusarrest=R=>{const r=R.r,hr=r.r(62,80),rr=60/hr,pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);let t=r.r(.2,.5);const tp=r.r(3.2,4.2),gap=r.r(2.9,3.6);
+  while(t<tp){const pi=addP(R,t-pr,pm);addV(R,t,vm,pi);t+=rr*(1+.01*r.n())}const te=t-rr+gap;addV(R,te,vm);span(R,t-rr+.1,te-.05,'Pause: no P wave, not a multiple of the P–P');pt(R,te,'Junctional escape');let t2=te+rr*1.05;while(t2<DUR+.5){const pi=addP(R,t2-pr,pm);addV(R,t2,vm,pi);t2+=rr}
+  R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with sinus arrest';R.meta.reg='irr';R.meta.noMeas=['rate']};
+GEN.saexit=R=>{const r=R.r,hr=r.r(62,82),rr=60/hr,pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);let t=r.r(.2,.5),k=0;const drop=Math.floor(r.r(4,6));
+  while(t<DUR+.5){if(k===drop){span(R,t-rr+.08,t+rr-.08,'Pause exactly two P–P intervals');t+=rr;k++;continue}const pi=addP(R,t-pr,pm);addV(R,t,vm,pi);t+=rr;k++}R.tm={vm,pm,pr};R.meta.rhy='Sinoatrial exit block (type II)';R.meta.reg='regirr'};
+GEN.hgavb=R=>{const r=R.r,hra=r.r(96,115),pp=60/hra,pr=r.r(.16,.2),g=3,vm=rbbbM(r,{qt:qtF(hra/g)}),pm=nP(r);let t=-r.r(0,pp)-pp*Math.floor(r.u()*g),k=0;
+  while(t<DUR+.5){if(k%g===0){const pi=addP(R,t,pm);addV(R,t+pr,vm,pi)}else{addP(R,t,pm,{cond:false});if(t>.3&&t<5.2&&k%g===1)pt(R,t+.04,'Blocked')}t+=pp;k++}R.tm={vm,pm,pr};R.meta.rhy=`High-grade AV block (${g}:1)`;hl(R,['II'],'Two or more consecutive P waves not conducted; constant PR when conducted')};
+GEN.isodiss=R=>{const r=R.r,hrs=r.r(56,64),hrj=hrs*r.r(1.02,1.06),vm=sinMorph(r,{qt:qtF(hrj)}),pm=nP(r);let t=r.r(.1,.4);while(t<DUR+.6){addV(R,t,vm);t+=60/hrj}let tp=r.r(-.1,.15);while(tp<DUR){addP(R,tp,pm,{cond:false});tp+=60/hrs}
+  R.tm={vm,pm:null,pr:null};R.meta.rhy='Isorhythmic AV dissociation';R.meta.prq='none';hl(R,['II'],'P waves drift into and out of the QRS at a similar rate')};
+GEN.ashman=R=>{const r=R.r,hr=r.r(90,120),rr=60/hr,vm=sinMorph(r,{qt:qtF(hr)}),ab=rbbbM(r,{qt:qtF(hr)});ab.kind='a';let t=-r.r(0,.4),i=0;
+  while(t<DUR+.6){const isAb=(i===7||i===14);let d=Math.max(.34,rr*(.7+.6*r.u()));if(i===5||i===12)d=rr*1.6;if(i===6||i===13)d=Math.max(.3,rr*.52);addV(R,t,isAb?ab:vm);if(isAb&&t>.2&&t<9.8)pt(R,t,'Aberrant (Ashman)');t+=d;i++}
+  fwaves(R,.06);R.opt.strip='V1';R.tm={vm,pm:null,pr:null};R.meta.rhy='Atrial fibrillation with Ashman aberrancy';R.meta.reg='irr';R.meta.prq='none';hl(R,['V1'],'RBBB-shaped beat ending a long–short cycle')};
+GEN.altbbb=R=>{const r=R.r,hr=r.r(62,82),pr=r.r(.18,.22),a=rbbbM(r,{qt:qtF(hr,.43)}),b=lbbbM(r,{qt:qtF(hr,.45)}),pm=nP(r);R.opt.strip='V1';sinus(R,{hr,pr,vm:i=>i%2?b:a,pm});R.tm={vm:a,pm,pr};R.meta.rhy='Sinus rhythm with alternating bundle branch block';R.meta.noMeas=['axis'];hl(R,['V1'],'RBBB and LBBB shapes alternate')};
+GEN.ivcd=R=>{const r=R.r,hr=r.r(62,85),pr=r.r(.15,.19),vm=V({axis:r.r(-10,40),s:1.42,amp:r.r(.9,1.05),z:-.35,qt:qtF(hr,.44),tA:.25,td:fv(150,.1)}),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with intraventricular conduction delay';hl(R,['V1','V6','I'],'Wide QRS without a typical RBBB or LBBB shape')};
+/* ---- pacing ---- */
+GEN.aai=R=>{const r=R.r,hr=r.r(60,75),pr=r.r(.18,.22),vm=sinMorph(r,{qt:qtF(hr)}),pm=[spike(r.r(.6,1),nrm([.3,.85,.3])),...Pw('n',.12).map(b=>({...b,c:b.c+.015}))];sinus(R,{hr,pr,vm,pm,jit:.001});R.tm={vm,pm:null,pr:null};R.meta.rhy='Atrial paced rhythm';R.meta.paced=1;R.meta.prq='long';
+  const b=beatNear(R,5);pt(R,b.t-pr,'Atrial spike');hl(R,['II'],'Spike before each P; narrow native QRS')};
+GEN.crt=R=>{const r=R.r,hr=r.r(62,78),av=.12,vm=V({q:[spike(r.r(.6,1)),{sh:'sp',c:.008,A:.6,d:nrm([.7,.2,-.3])},{c:.042,wl:.022,A:1.05,d:nrm([-.65,.15,.72])},{c:.09,wl:.02,A:.45,d:nrm([-.3,.5,.6])}],qt:.42,stA:-.08,std:nrm([-.6,.2,.7]),t:[{c:.31,wl:.07,wr:.05,A:.35,d:nrm([.6,-.2,-.6])}],kind:'p'}),pm=nP(r);
+  sinus(R,{hr,pr:av,vm,pm});R.tm={vm,pm,pr:av};R.meta.rhy='Biventricular (CRT) pacing';R.meta.paced=1;R.meta.prq='none';hl(R,['V1'],'Dominant R in V1 (LV lead activates first)');hl(R,['I'],'Negative or QS in I','b')};
+GEN.undersense=R=>{const r=R.r,hrs=r.r(68,82),pr=.16,vm=sinMorph(r,{qt:qtF(hrs)}),pm=nP(r),pv=pacedM(r),sp={q:[spike(1)],st:[],t:[],loc:[],kind:'s'},iv=60/r.r(56,62);
+  const ev=[];let tp=-r.r(0,.6);while(tp<DUR+.5){ev.push({t:tp+pr,k:'n',p:tp});tp+=60/hrs*(1+.01*r.n())}let ts=r.r(.1,.9);while(ts<DUR+.3){ev.push({t:ts,k:'s'});ts+=iv}ev.sort((a,b)=>a.t-b.t);
+  let last=-9,nl=0;ev.forEach(e=>{const free=e.t-last>.3;if(e.k==='n'){const pi=addP(R,e.p,pm,{cond:free});if(free){addV(R,e.t,vm,pi);last=e.t}}else if(free){addV(R,e.t,pv);last=e.t}else{addV(R,e.t,sp);if(e.t>.2&&e.t<9.8&&nl++<2)pt(R,e.t,'Spike in refractory period: no capture')}});
+  R.tm={vm,pm,pr};R.meta.rhy='Pacemaker undersensing (asynchronous spikes competing with sinus rhythm)';R.meta.paced=1;R.meta.reg='irr';R.meta.noMeas=['rate','pr','qtc','rhythm'];hl(R,['II'],'Spikes fire on their own schedule, ignoring native beats')};
+GEN.oversense=R=>{const r=R.r,hr=r.r(65,72),iv=60/hr,vm=pacedM(r);let t=r.r(.2,.5);const p0=r.r(3,4.5),p1=p0+r.r(2,2.8);while(t<DUR+.5){if(t>p0&&t<p1){t+=iv;continue}addV(R,t,vm);t+=iv}
+  const a=new Float32Array(N),m=bandNoise(r,25,120,1);for(let i=0;i<N;i++){const tt=i/FS;if(tt>p0-.3&&tt<p1)a[i]=m[i]*.12}R.ela.LA=a;span(R,p0,p1,'Pause: muscle noise sensed as beats, pacing inhibited');
+  R.tm={vm,pm:null,pr:null};R.meta.rhy='Pacemaker oversensing (inhibition by myopotentials)';R.meta.paced=1;R.meta.prq='none';R.meta.noMeas=['rate','pr','qtc']};
+GEN.pmt=R=>{const r=R.r,hr=r.r(118,128),vm=pacedM(r),pm=Pw('retro',.12);sinus(R,{hr,vm,jit:.001});R.ev.q.slice().forEach(q=>addP(R,q.t+.22,pm,{k:'r'}));R.tm={vm,pm:null,pr:null};R.meta.rhy='Pacemaker-mediated tachycardia';R.meta.paced=1;R.meta.prq='none';
+  hl(R,['II','III','aVF'],'Retrograde P after each paced QRS triggers the next beat');hl(R,['V1'],'Paced at the upper rate limit','b')};
+/* ---- structure and channelopathy ---- */
+GEN.arvc=R=>{const r=R.r,hr=r.r(60,82),pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr),loc:[{c:.072,wl:.018,A:-.12,lm:{V1:1,V2:.8,V3:.5}},{c:.106,wl:.006,A:.17,lm:{V1:1,V2:.9,V3:.6}},{c:.28,wl:.06,wr:.05,A:-.5,lm:{V1:.8,V2:1,V3:.8}}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V1','V2','V3'],'Epsilon wave after the QRS; T inversion V1–V3')};
+GEN.brugada2=R=>{const r=R.r,hr=r.r(58,80),pr=r.r(.15,.19),vm=sinMorph(r,{qt:qtF(hr),loc:[{c:.09,wl:.006,wr:.016,A:.14,lm:{V2:1,V1:.7}},{sh:'p',a:.08,ra:.012,b:.2,fb:.12,A:.13,lm:{V2:1,V1:.6}},{c:.31,wl:.05,wr:.045,A:.22,lm:{V2:1,V1:.4}}]}),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V2'],'Saddleback: J point up, ST dips, T upright')};
+GEN.shortqt=R=>{const r=R.r,hr=r.r(60,80),pr=r.r(.14,.17),qt=.27*Math.cbrt(60/hr),vm=V({axis:r.r(40,70),qt,tfix:1,twl:.038,twr:.03,tA:.75}),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';const b=beatNear(R,5);span(R,b.t,b.t+qt,'QT under 340 ms');hl(R,['V2','V3'],'Tall, peaked T with no ST segment')};
+GEN.lqt3=R=>{const r=R.r,hr=r.r(48,60),pr=r.r(.15,.18),qt=r.r(.56,.6)*Math.cbrt(60/hr),vm=V({axis:r.r(40,70),qt,tfix:1,twl:.045,twr:.035,tA:.45}),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus bradycardia';const b=beatNear(R,5);span(R,b.t+.1,b.t+qt-.13,'Long isoelectric ST, late narrow T');hl(R,['II','V3'],'Late-onset, peaked T (LQT3 pattern)')};
+GEN.apicalhcm=R=>{const r=R.r,hr=r.r(58,80),pr=r.r(.15,.18),qt=qtF(hr,.44),vm=V({axis:r.r(10,45),amp:r.r(1.5,1.8),z:-.5,qt,stA:-.08,std:nrm([.5,.3,.8]),t:[{c:qt-.11,wl:.06,wr:.055,A:-1.05,d:nrm([.5,.3,.8])}]}),pm=Pw('mitrale',.14);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V2','V3','V4','V5'],'Giant T inversion (often over 10 mm)')};
+GEN.amyloid=R=>{const r=R.r,af=r.chance(.35),hr=r.r(68,92),vm=V({axis:r.r(-20,30),amp:r.r(.28,.36),sep:0,xq:[{c:.022,wl:.012,A:.12,d:nrm([-.2,.05,-.95])}],qt:qtF(hr,.43),tA:.12}),pm=Pw('n',.09);
+  if(af){irregular(R,hr,.6,1.4,()=>vm);fwaves(R,.03);R.tm={vm,pm:null,pr:null};R.meta.reg='irr';R.meta.prq='none';R.meta.rhy='Atrial fibrillation'}else{sinus(R,{hr,pr:.24,vm,pm});R.tm={vm,pm,pr:.24};R.meta.rhy='Sinus rhythm with first-degree AV block'}
+  hl(R,['I','II','III','aVR','aVL','aVF'],'Low voltage despite thick walls on echo');hl(R,['V1','V2','V3'],'Pseudo-infarct QS pattern','b')};
+GEN.asd=R=>{const r=R.r,hr=r.r(65,90),pr=r.r(.16,.21),vm=V({axis:r.r(95,115),xq:[{c:.08,wl:.011,A:.35,d:nrm([-.6,-.05,.78])}],term:.4,qt:qtF(hr),td:nrm([.55,.45,-.2]),loc:[{c:.036,wl:.004,A:-.12,lm:{II:1,III:1,aVF:1}}]}),pm=Pw('n',.17);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V1'],'Incomplete RBBB (rSr′)');hl(R,['II','III','aVF'],'Notch near the R peak (crochetage); right axis','b')};
+GEN.copd=R=>{const r=R.r,hr=r.r(92,112),pr=r.r(.13,.16),vm=V({axis:r.r(88,105),amp:r.r(.45,.55),maind:nrm([.2,.8,-.7]),sep:.6,qt:qtF(hr),tA:.22}),pm=Pw('pulm',.13);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus tachycardia';
+  hl(R,['I','aVL','V5','V6'],'Low voltage, poor R-wave progression');hl(R,['II','III','aVF'],'Tall P waves (P pulmonale), rightward axis','b')};
+GEN.cerebralT=R=>{const r=R.r,hr=r.r(46,60),pr=r.r(.15,.19),qt=r.r(.56,.62)*Math.cbrt(60/hr),d=nrm([.5,.35,.8]),vm=V({axis:r.r(40,70),qt,tfix:1,t:[{c:qt-.15,wl:.1,wr:.08,A:-.95,d}],uA:.12}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus bradycardia';hl(R,['V2','V3','V4','V5','V6','I','II'],'Giant, wide T inversion with very long QT')};
+/* ---- normal variants ---- */
+GEN.athlete=R=>{const r=R.r,hr=r.r(42,54),pr=r.r(.21,.25),ax=r.r(55,75),vm=V({axis:ax,amp:r.r(1.45,1.7),qt:qtF(hr,.4),tA:.6,td:fv(ax-10,.75),stA:.14,std:nrm([.25,.25,1]),stra:.07,xst:[{c:.088,wl:.006,wr:.012,A:.12,d:fv(ax,.25)}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm,resp:.06});R.tm={vm,pm,pr};R.meta.rhy='Sinus bradycardia with first-degree AV block';hl(R,['V2','V5','V6'],'High voltage with early repolarization: training-related');hl(R,['II'],'Slow rate, long PR: high vagal tone','b')};
+GEN.child=R=>{const r=R.r,hr=r.r(100,125),pr=r.r(.1,.13),vm=V({axis:r.r(95,110),z:.25,amp:r.r(1,1.2),qt:qtF(hr,.4),td:nrm([.5,.6,-.3]),loc:[{c:.24,wl:.05,wr:.045,A:-.2,lm:{V1:1,V2:.9,V3:.5}}]}),pm=nP(r);
+  sinus(R,{hr,pr,vm,pm,resp:.05});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm (age-appropriate rate)';hl(R,['V1','V2','V3'],'T inversion V1–V3: normal juvenile pattern');hl(R,['V1'],'Prominent R in V1: right-ventricular dominance of childhood','b')};
+/* ---- electrolytes and drugs, staged ---- */
+GEN.hyperk1=R=>{const r=R.r,hr=r.r(62,88),pr=r.r(.15,.18),vm=V({axis:r.r(40,70),qt:r.r(.36,.39),tfix:1,twl:.036,twr:.032,tA:r.r(.8,.95),td:fv(45,.8)}),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V2','V3','V4','II'],'Narrow-based, symmetric, peaked T; everything else normal')};
+GEN.hyperk3=R=>{const r=R.r,hr=r.r(38,52),vm=V({axis:r.r(30,70),s:1.85,qt:.44,tfix:1,twl:.04,twr:.035,tA:.9,td:fv(45,.7)});sinus(R,{hr,vm,jit:.008});R.tm={vm,pm:null,pr:null};R.meta.rhy='Slow wide-complex rhythm, no P waves';R.meta.prq='none';hl(R,['II','V2'],'No P waves, very wide QRS, peaked T')};
+GEN.brash=R=>{const r=R.r,hr=r.r(32,44),vm=V({axis:r.r(40,70),qt:.44,tfix:1,twl:.04,twr:.035,tA:.7,td:fv(45,.7),s:1.1});sinus(R,{hr,vm,jit:.006});R.tm={vm,pm:null,pr:null};R.meta.rhy='Junctional bradycardia (BRASH)';R.meta.prq='none';hl(R,['II'],'Slow junctional rhythm, no P waves');hl(R,['V2','V3'],'Only moderately peaked T','b')};
+GEN.hypok2=R=>{const r=R.r,hr=r.r(70,95),rr=60/hr,pr=r.r(.16,.2),qt=r.r(.38,.41),vm=V({axis:r.r(40,70),qt,tfix:1,tA:.05,uA:r.r(.28,.34),stA:-.12,std:fv(55,.5)}),pm=Pw('n',.2),pv=V({q:[{c:.05,wl:.03,A:1.3,d:nrm([.15,.85,-.5])},{c:.112,wl:.025,A:.7,d:nrm([.45,.6,-.65])}],qt:.43,t:[{c:.33,wl:.075,wr:.05,A:.5,d:nrm([-.3,-.75,.55])}],kind:'v'});
+  let t=r.r(.2,.5),k=0;while(t<DUR+.6){const pi=addP(R,t-pr,pm);addV(R,t,vm,pi);if(k%3===2){addV(R,t+rr*.62,pv);t+=2*rr}else t+=rr;k++}R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with PVCs';R.meta.reg='regirr';R.meta.uw=1;hl(R,['V2','V3'],'Large U waves, T almost absent');hl(R,['II','V5'],'ST depression; frequent PVCs','b')};
+GEN.hypomg=R=>{const r=R.r,hr=r.r(62,80),rr=60/hr,pr=r.r(.15,.19),qt=r.r(.5,.54)*Math.cbrt(60/hr),vm=V({axis:r.r(40,70),qt,tA:.36,twl:.11,twr:.06,uA:.16}),pm=nP(r),pv=V({q:[{c:.05,wl:.03,A:1.3,d:nrm([-.3,.75,.6])},{c:.12,wl:.028,A:.6,d:nrm([-.5,.3,.65])}],qt:.42,t:[{c:.31,wl:.075,wr:.05,A:.45,d:nrm([.4,-.6,-.6])}],kind:'v'});
+  let t=r.r(.2,.5),k=0;while(t<DUR+.6){const pi=addP(R,t-pr,pm);addV(R,t,vm,pi);if(k===4){const tv=t+qt*.92;addV(R,tv,pv);pt(R,tv,'R-on-T PVC');t+=2*rr}else t+=rr;k++}R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with a PVC';R.meta.reg='irr';hl(R,['II','V3'],'Long QT with broad T and U')};
+GEN.renal=R=>{const r=R.r,hr=r.r(68,90),pr=r.r(.17,.21),qt=r.r(.48,.52)*Math.cbrt(60/hr),vm=V({axis:r.r(0,35),amp:r.r(1.4,1.6),z:-.55,qt,tfix:1,twl:.036,twr:.032,tA:.85,td:fv(40,.8)}),pm=Pw('mitrale',.13);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';
+  const b=beatNear(R,5);span(R,b.t+.1,b.t+qt-.12,'Long ST segment (low Ca²⁺)');hl(R,['V2','V3','V4'],'Peaked, narrow T (high K⁺)');hl(R,['V1','V5'],'LVH voltage','b')};
+GEN.digtox=R=>{const r=R.r,hr=r.r(48,60),ax=r.r(40,70),vm=V({axis:ax,qt:.34,tfix:1,tA:.12,twl:.05,twr:.04,xst:[{c:.17,wl:.06,wr:.05,A:.17,d:neg(fv(ax,-.25))}]});sinus(R,{hr,vm,jit:.002});fwaves(R,.05);R.tm={vm,pm:null,pr:null};R.meta.rhy='Atrial fibrillation with a regular junctional rhythm ("regularized AF")';R.meta.prq='none';R.meta.reg='reg';
+  hl(R,['V1'],'Fibrillatory baseline');hl(R,['II'],'But the ventricular rhythm is perfectly regular: complete block with junctional escape','b')};
+/* ---- technical ---- */
+GEN.v1v2high=R=>{const r=R.r,hr=r.r(62,88),pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);R.opt.pv={V1:nrm([-.32,-.5,.8]),V2:nrm([-.05,-.5,.86])};sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';hl(R,['V1','V2'],'Negative P, rSr′, T inversion: electrodes too high')};
+GEN.lallrev=R=>{const r=R.r,hr=r.r(62,88),pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);R.opt.swap=['LA','LL'];sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm (LA/LL reversed)';hl(R,['III'],'Lead III inverted');hl(R,['I','II'],'P wave taller in I than in II','b')};
+GEN.rarl=R=>{const r=R.r,hr=r.r(62,88),pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);R.opt.swap=['RA','RL'];sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm (RA/RL reversed)';R.meta.noMeas=['axis'];hl(R,['II'],'Nearly flat line');hl(R,['aVR','aVF'],'Identical leads','b')};
+GEN.cpr=R=>{const r=R.r,cr=r.r(100,118),A=new Float32Array(N),B=new Float32Array(N),C=new Float32Array(N),stop=r.r(6.2,7),m=bandNoise(r,.2,1,1);let ph=0;
+  for(let i=0;i<N;i++){const t=i/FS;ph+=2*Math.PI*cr/60/FS;if(t<stop){const w=Math.pow(Math.max(0,Math.sin(ph)),1.6)*(1+.15*m[i]);A[i]=w*1.1;B[i]=-w*.7;C[i]=w*.4}}R.ela.RA=A;R.ela.LA=B;R.ela.LL=C;
+  const vf=bandNoise(r,3.5,8,.12);addCont(R,vf,nrm([.3,.85,.35]));span(R,0,stop,'Compressions (about '+Math.round(cr)+'/min)');span(R,stop,DUR,'Pause for rhythm check');R.tm=null;R.meta.rhy='CPR artifact; fine VF during the pause';R.meta.noMeas=['rate','axis','qrs','pr','qtc'];R.meta.prq='none'};
+GEN.tremor=R=>{const r=R.r,hr=r.r(64,84),pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);sinus(R,{hr,pr,vm,pm});const a=new Float32Array(N),f=r.r(4.6,5.6),m=bandNoise(r,.2,1,1);for(let i=0;i<N;i++)a[i]=.22*(1+.25*m[i])*Math.sin(2*Math.PI*f*i/FS);R.ela.LA=a;
+  R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm with tremor artifact';hl(R,['I','III','aVL'],'Regular 4–6 Hz oscillation resembling flutter waves');hl(R,['II','V1'],'Sinus P waves visible where the artifact is absent','b')};
+GEN.tcp=R=>{const r=R.r,hr=r.r(68,78),iv=60/hr,cap=V({q:[{c:.05,wl:.032,A:1.3,d:nrm([.3,-.6,-.6])},{c:.115,wl:.03,A:.75,d:nrm([.5,-.4,-.7])}],qt:.44,t:[{c:.33,wl:.08,wr:.05,A:.5,d:nrm([-.35,.6,.6])}],kind:'p'}),art={c:.012,wl:.004,wr:.035,A:1.4,d:nrm([.6,.5,.6])},spk={q:[spike(2.5,nrm([.6,.5,.6])),art],st:[],t:[],loc:[],kind:'s'};
+  const capQ={...cap,q:[spike(2.5,nrm([.6,.5,.6])),art,...cap.q]};const t1=r.r(3.2,4.6);let t=r.r(.2,.5);while(t<DUR+.5){addV(R,t,t<t1?spk:capQ);t+=iv}const e1=R.ev.q.find(q=>q.t>.4),e2=R.ev.q.find(q=>q.t>t1);if(e1&&e1.t<t1)pt(R,e1.t,'Spike, no capture');if(e2)pt(R,e2.t,'Capture: wide QRS and T');
+  R.tm={vm:cap,pm:null,pr:null};R.meta.rhy='Transcutaneous pacing: loss then gain of capture';R.meta.paced=1;R.meta.prq='none';R.meta.noMeas=['rate','pr','qtc','axis']};
+GEN.flec=R=>{const r=R.r,hr=r.r(48,66),pr=r.r(.25,.32),vm=V({axis:r.r(-10,40),s:r.r(1.5,1.7),qt:qtF(hr,.46),tA:.28,loc:[{c:.13,wl:.008,wr:.06,A:.2,lm:{V1:1,V2:.8}}]}),pm=Pw('n',.12);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus bradycardia with first-degree AV block';
+  hl(R,['II','V1','V5'],'Long PR and wide QRS: slowed conduction everywhere');hl(R,['V1','V2'],'Brugada-like coved ST','b')};
+GEN.wraplad=R=>{const r=R.r,hr=r.r(78,104),pr=r.r(.13,.17),vm=corMorph(occSegs('mLAD','right',true),occStage(r.r(60,200),null),qtF(hr,.41)),pm=nP(r);sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm';R.autoST=1};
+GEN.pacedmi=R=>{const r=R.r,hr=r.r(64,80),vm=pacedM(r);vm.st.push({sh:'p',a:.14,ra:.03,b:.3,fb:.12,A:.38,d:nrm([.82,-.55,-.15])});sinus(R,{hr,pr:.16,vm,pm:nP(r)});R.tm={vm,pm:nP(r),pr:.16};R.meta.rhy='Atrial-sensed, ventricular-paced rhythm';R.meta.paced=1;R.meta.prq='normal';
+  hl(R,['I','aVL'],'Concordant ST elevation (same direction as the paced QRS)');hl(R,['III','aVF'],'Reciprocal depression','b')};
+GEN.vswap=R=>{const r=R.r,hr=r.r(62,88),pr=r.r(.14,.18),vm=sinMorph(r,{qt:qtF(hr)}),pm=nP(r);R.opt.pv={V2:PV.V4.d,V4:PV.V2.d};sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.meta.rhy='Sinus rhythm (V2 and V4 cables swapped)';hl(R,['V2','V3','V4'],'R wave rises, falls, then rises again: progression breaks')};
+
 /* ============ pattern catalogue ============ */
-const CAT={normal:"Normal & variants",rhythm:"Rhythms & ectopy",cond:"Conduction & blocks",isch:"Ischemia & infarction",struct:"Chamber & structure",meta:"Electrolytes, drugs & temperature",mimic:"Mimics & technical"};
+const CAT={normal:"Normal & variants",rhythm:"Rhythms & ectopy",cond:"Conduction & blocks",pace:"Pacing & devices",isch:"Ischemia & infarction",struct:"Chamber & structure",chan:"Channelopathies & cardiomyopathies",meta:"Electrolytes, drugs & temperature",mimic:"Mimics & technical"};
 const CULPRIT=["Proximal LAD (before the first diagonal)","Right coronary artery","Left circumflex (or obtuse marginal)","First diagonal / high lateral branch","Left main or multivessel disease"];
 const P=[
 /* ---- normal & variants ---- */
@@ -756,12 +903,12 @@ const P=[
  hints:["Measure the PR and look at the start of the QRS."],sim:["rbbb","avb1","lbbb","poststemi"],
  vs:{rbbb:"RBBB has a normal PR and terminal (not initial) slurring.",poststemi:"Posterior MI has a normal PR, no delta wave and ST depression in V1–V3."},
  q2:{q:"If this patient develops AF, which treatment is dangerous?",opts:["AV-nodal blockers (adenosine, verapamil, diltiazem, beta-blockers)","Procainamide","Synchronized cardioversion","Ablation of the accessory pathway"],a:0,why:"Blocking the AV node leaves the accessory pathway as the only route, allowing extremely rapid ventricular rates and VF."}},
-{id:"vpace",cat:"cond",name:"Paced rhythm",
+{id:"vpace",cat:"pace",name:"Paced rhythm",
  feats:["Pacing spike immediately before each QRS","Wide QRS (120 ms or more) with an LBBB-like shape from right-ventricular pacing","Superior axis with RV apical pacing (negative II, III, aVF)","Discordant ST-T; sensed P waves or atrial spikes may precede it"],
  sig:"Expected discordance makes ischemia hard to read; modified Sgarbossa criteria apply to RV-paced rhythms. Check capture, sensing and the programmed rate. Bipolar spikes are small and are easily lost with the 40 Hz monitor filter.",
  hints:["Look just before the QRS."],sim:["lbbb","vt","fcap","aivr"],
  vs:{lbbb:"LBBB has no spikes and usually a normal or left axis.",fcap:"Failure to capture shows spikes without a following QRS."}},
-{id:"fcap",cat:"cond",name:"Pacemaker failure to capture",
+{id:"fcap",cat:"pace",name:"Pacemaker failure to capture",
  feats:["Pacing spikes not followed by a QRS","Captured beats are wide and paced","Pauses filled by slow native escape beats","Spikes at the programmed interval"],
  sig:"Lead dislodgement or fracture, rising threshold (MI, hyperkalemia, acidosis, drugs), battery depletion or programming. If symptomatic, transcutaneous pacing and device interrogation. Contrast with undersensing (spikes in the wrong place) and oversensing (missing spikes).",
  hints:["Is every spike followed by a QRS?"],sim:["vpace","mob2","avb3","artifact"],
@@ -836,7 +983,7 @@ const P=[
  sig:"Pulmonary hypertension, chronic lung disease, congenital heart disease, mitral or pulmonary stenosis. A dominant R in V1 also occurs with RBBB, posterior MI, WPW, HCM, dextrocardia, lead misplacement, and normally in children.",
  hints:["What is the axis, and what dominates V1?"],sim:["poststemi","rbbb","lpfb","pe"],
  vs:{poststemi:"Posterior MI has ST depression with upright T waves in V1–V3 and no right axis.",rbbb:"RBBB has a QRS of 120 ms or more with rsR′."}},
-{id:"hcm",cat:"struct",name:"Hypertrophic cardiomyopathy",
+{id:"hcm",cat:"chan",name:"Hypertrophic cardiomyopathy",
  feats:["Deep, narrow (“dagger”) Q waves in lateral (I, aVL, V5–V6) and inferior leads","LVH voltage","Left atrial enlargement","Variable repolarization changes; the apical form gives giant T inversion in V2–V5"],
  sig:"The commonest inherited cardiomyopathy and a cause of sudden death in young athletes; the ECG is abnormal in over 90%. Refer for echocardiography and screen first-degree relatives. Exertional syncope or a family history of sudden death is a red flag.",
  hints:["Compare the width and depth of the lateral Q waves."],sim:["lvh","oldimi","wpw","latstemi"],
@@ -912,7 +1059,7 @@ const P=[
  sig:"Diagnosis needs two of: pleuritic chest pain eased by sitting forward, friction rub, typical ECG, effusion. Distinguish from STEMI (reciprocal depression, convex ST, territorial, Q waves) and early repolarization (ST/T ratio in V6 under 0.25). NSAIDs plus colchicine; check for effusion.",
  hints:["Is the elevation territorial?","Look at the PR segment in II and aVR."],sim:["erp","infstemi","antstemi","effusion"],
  vs:{erp:"Early repolarization has no PR depression, is usually bradycardic, and the ST/T ratio in V6 is under 0.25.",infstemi:"Inferior STEMI is territorial with reciprocal depression in aVL."}},
-{id:"brugada",cat:"mimic",name:"Brugada pattern (type 1)",
+{id:"brugada",cat:"chan",name:"Brugada pattern (type 1)",
  feats:["Coved ST elevation of 2 mm or more in V1–V2","The ST segment descends into an inverted T wave","RBBB-like terminal r′ without a wide S in I and V6","Unmasked by fever, sodium-channel blockers or high chest-lead placement"],
  sig:"An inherited sodium-channel disorder with risk of polymorphic VT/VF and sudden death, often at rest or with fever. Spontaneous type 1 with syncope warrants an ICD. Treat fever promptly and avoid sodium-channel blockers. Type 2 (saddleback) is not diagnostic alone.",
  hints:["Look at the ST shape in V1–V2 only."],sim:["rbbb","antstemi","erp","peric"],
@@ -1008,6 +1155,541 @@ const VSX={
 'artifact>af':'AF has organized narrow QRS complexes at irregular intervals; artifact has native QRS complexes marching on time through noise.'};
 Object.entries(VSX).forEach(([k,t])=>{const[a,b]=k.split('>');if(PM[a]){PM[a].vs=PM[a].vs||{};if(!PM[a].vs[b])PM[a].vs[b]=t}});
 
+/* ============ pattern catalogue, set 2: subtle occlusion, specialty rhythms, pacing, channelopathies, staged electrolytes ============ */
+P.push(
+/* ---- subtle occlusion & equivalents ---- */
+{id:"hyperT",cat:"isch",name:"Hyperacute T waves (early LAD occlusion)",
+ feats:["Broad-based, bulky, symmetric T waves in V2–V4","T wave large relative to the preceding QRS","ST elevation absent or below STEMI criteria","Evolves into ST elevation over minutes on serial tracings"],
+ sig:"The first ECG sign of coronary occlusion, within minutes and before ST elevation. Missed because it does not meet STEMI criteria. Compare with a prior ECG and repeat every 15–30 minutes: occlusion MI (OMI) can exist without STEMI criteria.",
+ hints:["Compare the size of each precordial T wave with its QRS.","Is the base of the T wave broad or narrow?"],sim:["hyperk1","erp","antstemi","dewinter"],
+ vs:{hyperk1:"Hyperkalemic T waves are narrow-based and tented, diffuse rather than territorial.",erp:"Early repolarization T waves are proportional to tall QRS complexes, with J-point notching and no evolution.",antstemi:"Anterior STEMI has progressed to frank ST elevation with reciprocal inferior depression.",dewinter:"de Winter adds 1–3 mm of upsloping J-point depression before the tall T."},
+ q2:{q:"Ongoing chest pain with this tracing. Best next step?",opts:["Serial ECGs every 15–30 minutes and urgent cardiology review","Discharge if the first troponin is normal","Treat as hyperkalemia","No action: it does not meet STEMI criteria"],a:0,why:"Hyperacute T waves are an occlusion sign. Serial tracings capture the evolution; many centers activate the cath lab on OMI findings without STEMI criteria."}},
+{id:"saflag",cat:"isch",name:"High lateral occlusion (“South African flag”)",
+ feats:["ST elevation in I, aVL and V2","Reciprocal ST depression in III (often aVF and II)","V3–V6 show little change","Small absolute elevation, because I and aVL are low-voltage leads"],
+ sig:"First diagonal (or obtuse marginal) occlusion. The elevation is small; the inferior reciprocal depression is often the more obvious clue. Named for the shape the involved leads make on the 12-lead layout.",
+ hints:["Start with lead III: is the ST depressed?","Which leads look at the high lateral wall?"],sim:["latstemi","infstemi","peric","antstemi"],
+ vs:{latstemi:"A larger lateral STEMI elevates V5–V6 too; here V2 is involved and V3–V6 are spared.",infstemi:"Inferior STEMI elevates II, III and aVF; here they are depressed.",peric:"Pericarditis elevates the inferior leads too and lacks reciprocal depression."},
+ q2:{q:"Which artery is most likely occluded?",opts:CULPRIT,a:3,why:"Elevation in I, aVL and V2 with inferior reciprocity localizes to the first diagonal and the high lateral wall."}},
+{id:"swirl",cat:"isch",name:"Septal LAD occlusion (“precordial swirl”)",
+ feats:["ST elevation in V1–V2 (V1 often largest) and in aVR","ST depression in V5–V6 and the inferior leads","Elevation fades from V1 toward V4","Injury vector points rightward, anterior and superior"],
+ sig:"Occlusion of the LAD at or before the first septal perforator: the injured septum points the vector toward V1 and aVR. Often mistaken for RV infarction or Brugada. Treat as an anterior occlusion.",
+ hints:["Follow the ST elevation from V1 to V4: does it grow or fade?","Where is the ST depression?"],sim:["antstemi","avr","rvmi","brugada"],
+ vs:{antstemi:"Typical anterior STEMI peaks in V2–V4 and spreads leftward; here V1 is largest with lateral depression.",avr:"Diffuse subendocardial ischemia elevates aVR but not V1–V3.",rvmi:"RV infarction comes with inferior ST elevation; here the inferior leads are depressed.",brugada:"Brugada is a fixed coved shape in V1–V2 without reciprocal depression or evolution."},
+ q2:{q:"Which artery is most likely occluded?",opts:CULPRIT,a:0,why:"Septal injury (V1, aVR) with inferior and lateral reciprocity points to the proximal LAD at the septal branches."}},
+{id:"aslanger",cat:"isch",name:"Aslanger pattern (inferior OMI with multivessel disease)",
+ feats:["ST elevation in III but not in II or aVF","ST depression in V4–V6 with an upright T","ST in V1 higher than in V2","One inferior injury vector summed with diffuse subendocardial ischemia"],
+ sig:"An inferior occlusion masked by simultaneous subendocardial ischemia from multivessel disease: the two vectors add up to elevation only in III. High mortality; treat as an occlusion equivalent.",
+ hints:["Compare lead III with II and aVF.","What is happening in V4–V6?"],sim:["infstemi","avr","poststemi","lvh"],
+ vs:{infstemi:"A typical inferior STEMI elevates II, III and aVF together.",avr:"The aVR pattern is diffuse depression with aVR elevation, not isolated elevation in III.",poststemi:"Posterior MI depresses V1–V3, not V4–V6."}},
+{id:"rvmi",cat:"isch",name:"Inferior STEMI with right ventricular infarction",
+ feats:["ST elevation in II, III, aVF with III greater than II","ST elevation in V1 (and in V4R on right-sided leads)","Reciprocal depression in I and aVL","Often bradycardia or AV block"],
+ sig:"Proximal RCA occlusion. The infarcted RV is preload dependent: nitrates, diuretics and opioids can cause profound hypotension; give fluids if hypotensive. Record V4R in every inferior STEMI.",
+ hints:["Compare the ST elevation in III with II.","Is V1 elevated?"],sim:["infstemi","swirl","poststemi","peric"],
+ vs:{infstemi:"Without RV involvement, V1 is isoelectric or depressed.",swirl:"Septal LAD occlusion elevates V1 but depresses the inferior leads.",poststemi:"Posterior extension depresses V1–V3."},
+ q2:{q:"Which treatment is most likely to cause hypotension here?",opts:["Nitroglycerin","IV fluid bolus","Aspirin","Heparin"],a:0,why:"An infarcted right ventricle depends on venous return; venodilation drops RV filling and output."}},
+{id:"stemirbbb",cat:"isch",name:"Anterior STEMI with new RBBB",
+ feats:["RBBB: rsR′ in V1, wide S in I and V6","ST elevation in V1–V4 (RBBB alone causes ST depression there)","Elevation in I and aVL, reciprocal depression inferiorly","A new RBBB implies a large territory"],
+ sig:"RBBB does not hide ST elevation: only the terminal QRS is delayed, so the ST is still interpretable. New RBBB with anterior STEMI means proximal LAD occlusion and a higher risk of complete block and shock.",
+ hints:["In RBBB the ST in V1–V3 should be slightly depressed. What is it here?","Which artery supplies the right bundle?"],sim:["rbbb","antstemi","brugada","bifasc"],
+ vs:{rbbb:"Uncomplicated RBBB has secondary ST depression and T inversion in V1–V3.",antstemi:"Without RBBB there is no rsR′ in V1 or wide terminal S in I and V6.",brugada:"Brugada mimics incomplete RBBB with coved elevation confined to V1–V2 and no reciprocal change."},
+ q2:{q:"Which artery is most likely occluded?",opts:CULPRIT,a:0,why:"The right bundle is supplied by septal perforators of the proximal LAD."}},
+{id:"shark",cat:"isch",name:"“Shark fin” (giant R / lambda wave)",
+ feats:["QRS, ST and T fused into one large triangle","The J point cannot be identified","The fused complex looks like a wide QRS","Massive elevation with reciprocal depression"],
+ sig:"An extreme injury current from large-territory occlusion, associated with cardiogenic shock and VF. Misread as a wide-complex rhythm or hyperkalemia; P waves before each complex and reciprocal depression give it away.",
+ hints:["Where does the QRS end?","Do other leads show the mirror image?"],sim:["vt","hyperk2","antstemi","tca"],
+ vs:{vt:"VT has AV dissociation and no P before each complex.",hyperk2:"Sine-wave hyperkalemia is diffuse with no reciprocal depression.",antstemi:"A typical STEMI keeps a visible J point."}},
+{id:"antsubtle",cat:"isch",name:"Subtle anterior OMI (terminal QRS distortion)",
+ feats:["Minimal ST elevation in V2–V3","No S wave and no J notch in V2 or V3 (terminal QRS distortion)","T waves bulky relative to the QRS","Subtle reciprocal depression in III or aVF"],
+ sig:"Loss of the S wave in V2–V3 separates subtle anterior occlusion from early repolarization. Any inferior reciprocal depression argues strongly for occlusion.",
+ hints:["Is there an S wave in V2 and V3?","Is there any inferior ST depression?"],sim:["erp","hyperT","antstemi","nsr"],
+ vs:{erp:"Early repolarization keeps the S wave, often shows J notching, and has no reciprocal depression.",hyperT:"Hyperacute T waves dominate there; here the key is the missing S wave.",antstemi:"Anterior STEMI has unequivocal ST elevation."}},
+{id:"wraplad",cat:"isch",name:"Anterior STEMI from a wraparound LAD",
+ feats:["ST elevation in V1–V6 and in II, III, aVF","No inferior reciprocal depression","aVR depressed","Apex and inferior apical segments injured"],
+ sig:"A long LAD wrapping around the apex supplies the inferior apical wall. Anterior plus inferior elevation without reciprocity can mimic pericarditis; the territorial distribution, larger T waves and evolution say otherwise.",
+ hints:["Is there ST depression anywhere other than aVR?","Which single artery could reach both walls?"],sim:["peric","antstemi","infstemi","erp"],
+ vs:{peric:"Pericarditis adds PR depression, spares V1, and has concave ST with smaller T waves.",antstemi:"A proximal LAD occlusion without wraparound shows inferior reciprocal depression.",infstemi:"Inferior STEMI does not elevate V1–V4."},
+ q2:{q:"Why is there no inferior reciprocal depression?",opts:["The LAD wraps around the apex, so the inferior wall is injured too","A second, RCA occlusion","Pericarditis","Limb lead reversal"],a:0,why:"The inferior apical injury vector cancels the reciprocal change that an anterior injury normally produces in II, III and aVF."}},
+{id:"pacedmi",cat:"isch",name:"Paced rhythm with acute MI (Sgarbossa)",
+ feats:["Ventricular pacing: wide, LBBB-like QRS after each spike","Concordant ST elevation in I and aVL (same direction as the QRS)","Reciprocal depression inferiorly","Excessively discordant ST (25% or more of the preceding S) also counts"],
+ sig:"RV pacing makes secondary ST-T changes the norm, so judge the ST against the QRS direction. Concordant elevation, concordant depression in V1–V3, or disproportionate discordance indicate acute occlusion.",
+ hints:["In each lead, is the ST going the same way as the QRS?","Compare the ST deviation with the QRS size."],sim:["vpace","sgarb","latstemi","lbbb"],
+ vs:{vpace:"Uncomplicated paced rhythm has ST and T opposite the QRS in every lead.",sgarb:"Same principle; there the wide QRS is native LBBB without spikes.",latstemi:"Without pacing the QRS is narrow."}},
+/* ---- wide and narrow tachycardias ---- */
+{id:"svtab",cat:"rhythm",name:"SVT with aberrant conduction",
+ feats:["Regular wide-complex tachycardia","Textbook bundle-branch shape: LBBB with a rapid initial deflection, or RBBB with rsR′ in V1","QRS usually 120–140 ms","No AV dissociation, fusion or capture beats"],
+ sig:"Aberrancy is functional bundle-branch block at a fast rate. Separating it from VT is hard; when in doubt treat a wide regular tachycardia as VT, especially with structural heart disease. Adenosine is reasonable only for a regular, monomorphic tachycardia in a stable patient.",
+ hints:["Does the QRS look like a textbook bundle-branch block?","Any sign of AV dissociation?"],sim:["vt","antidromic","svt","rvotvt"],
+ vs:{vt:"VT is bizarre rather than textbook BBB, may have a northwest axis, and may show AV dissociation, fusion or capture beats.",antidromic:"Antidromic AVRT is fully pre-excited: slurred onset, very wide, often over 200/min.",svt:"Without aberrancy the same rhythm has a narrow QRS.",rvotvt:"RVOT VT is LBBB-like with tall inferior R waves and arises in a normal heart."},
+ q2:{q:"Which finding would most strongly favor VT instead?",opts:["AV dissociation (independent P waves)","Rate over 160","QRS of 130 ms","A regular rhythm"],a:0,why:"Dissociated P waves, fusion or capture beats prove a ventricular origin."}},
+{id:"preaf",cat:"rhythm",name:"Pre-excited atrial fibrillation (WPW with AF)",
+ feats:["Irregularly irregular wide-complex tachycardia","Very fast: shortest R–R under 250 ms at times","QRS width and shape change beat to beat (variable fusion)","No P waves"],
+ sig:"AF conducting down an accessory pathway that lacks the AV node's decremental protection. AV-nodal blockers (adenosine, beta-blockers, calcium-channel blockers, digoxin, IV amiodarone) can precipitate VF. Use procainamide or synchronized cardioversion.",
+ hints:["Is it irregular? Is it wide?","Is every QRS the same shape?"],sim:["af","vt","pmvt","svtab"],
+ vs:{af:"Ordinary AF conducts through the AV node: narrow QRS, rates rarely above 200.",vt:"Monomorphic VT is regular with identical complexes.",pmvt:"Polymorphic VT twists without the recognizable pre-excited complexes.",svtab:"Aberrancy keeps one fixed bundle-branch shape."},
+ q2:{q:"Which drug is appropriate?",opts:["Procainamide","Adenosine","Diltiazem","Digoxin"],a:0,why:"Procainamide slows accessory-pathway conduction; AV-nodal blockers divert more impulses down the pathway."}},
+{id:"antidromic",cat:"rhythm",name:"Antidromic AVRT",
+ feats:["Regular wide-complex tachycardia, often over 200/min","Fully pre-excited QRS with a slurred onset","No visible P before the QRS","Sinus-rhythm ECG (if available) shows WPW"],
+ sig:"The circuit runs down the accessory pathway and back up the AV node, so the ventricles are activated entirely through the pathway. Indistinguishable from VT on one tracing; treat as VT if unsure (procainamide or cardioversion).",
+ hints:["Look at the onset of each QRS.","Is it perfectly regular?"],sim:["vt","svtab","wpw","preaf"],
+ vs:{vt:"VT may show AV dissociation or capture beats; a prior ECG with a delta wave favors antidromic AVRT.",preaf:"Pre-excited AF is irregular with varying QRS width.",wpw:"Sinus rhythm with WPW has a short PR at a normal rate.",svtab:"Aberrancy has a crisp bundle-branch shape, not a slurred delta onset."}},
+{id:"fascvt",cat:"rhythm",name:"Fascicular VT (idiopathic left VT)",
+ feats:["RBBB-like QRS, relatively narrow (120–140 ms)","Left (superior) axis: exit near the left posterior fascicle","Regular, 150–200/min; AV dissociation may be visible","Young patient, structurally normal heart"],
+ sig:"Re-entry within the Purkinje network, verapamil sensitive. Often misdiagnosed as SVT with RBBB and LAFB. Calcium-channel blockers are dangerous in other VT, so the diagnosis must be confident.",
+ hints:["What is the axis?","Is the QRS as wide as typical VT?"],sim:["svtab","bifasc","vt","rvotvt"],
+ vs:{svtab:"SVT with RBBB aberrancy usually keeps a normal axis and shows no AV dissociation.",bifasc:"Bifascicular block is the same QRS shape at a sinus rate with P waves.",rvotvt:"RVOT VT is LBBB-like with an inferior axis.",vt:"Scar VT is broader and more bizarre, in a diseased heart."},
+ q2:{q:"Which drug typically terminates this rhythm?",opts:["Verapamil","Adenosine","Digoxin","Lidocaine"],a:0,why:"The circuit includes slow-response, calcium-dependent Purkinje tissue."}},
+{id:"rvotvt",cat:"rhythm",name:"Right ventricular outflow tract VT",
+ feats:["LBBB-like QRS (dominant S in V1)","Inferior axis: tall R in II, III and aVF","Regular; often repetitive monomorphic runs","Usually a structurally normal heart"],
+ sig:"Triggered activity (cAMP-mediated delayed afterdepolarizations) from the outflow tract, provoked by exercise or catecholamines; often adenosine and beta-blocker sensitive. Exclude ARVC, which favors the same region.",
+ hints:["What is the QRS shape in V1?","What is the axis?"],sim:["fascvt","svtab","vt","pvc"],
+ vs:{fascvt:"Fascicular VT is RBBB-like with a superior axis.",svtab:"SVT with LBBB aberrancy typically has a normal or left axis.",vt:"Scar VT is wider and bizarre, in a diseased heart.",pvc:"Single outflow-tract PVCs share the shape; this is a sustained run."}},
+{id:"bidir",cat:"rhythm",name:"Bidirectional VT",
+ feats:["Wide-complex tachycardia whose frontal axis flips every beat","Alternating left and right axis, often with RBBB shape","Regular overall rate","Classic causes: digoxin toxicity, catecholaminergic polymorphic VT"],
+ sig:"Two alternating foci driven by calcium overload and delayed afterdepolarizations. Think digoxin toxicity (digoxin-specific antibodies) or CPVT (beta-blockade, flecainide).",
+ hints:["Compare consecutive beats in the limb leads.","Which drug overloads cells with calcium?"],sim:["altbbb","pvc","effusion","tdp"],
+ vs:{altbbb:"Alternating BBB occurs at a sinus rate with a P before each QRS.",effusion:"Electrical alternans in effusion changes amplitude, not axis, of narrow complexes.",tdp:"Torsades twists gradually over many beats rather than flipping each beat.",pvc:"Bigeminy alternates normal and ventricular beats, with P waves on the normal ones."},
+ q2:{q:"Which drug toxicity classically causes this?",opts:["Digoxin","Amiodarone","Metoprolol","Furosemide"],a:0,why:"Na⁺/K⁺-ATPase inhibition raises intracellular calcium, producing delayed afterdepolarizations from alternating foci."}},
+{id:"pmvt",cat:"rhythm",name:"Polymorphic VT with a normal QT (ischemic)",
+ feats:["Polymorphic VT: changing QRS shape and axis","Sinus beats before and after have a normal QT","Ischemic ST depression on the sinus beats","Not pause-dependent"],
+ sig:"Usually acute ischemia, and not torsades: magnesium is not the main treatment. Defibrillate if pulseless; treat the ischemia urgently, plus amiodarone or lidocaine and beta-blockade.",
+ hints:["Measure the QT on the sinus beats.","What is the ST doing on the sinus beats?"],sim:["tdp","vf","preaf","vt"],
+ vs:{tdp:"Torsades arises from a long QT, often after a pause, twisting around the baseline; magnesium is first line.",vf:"VF has no recognizable QRS complexes.",preaf:"Pre-excited AF is irregular but each complex is a recognizable pre-excited QRS.",vt:"Monomorphic VT has identical complexes."},
+ q2:{q:"What is the most likely cause?",opts:["Acute myocardial ischemia","Congenital long QT","Hypokalemia with long QT","Digoxin toxicity"],a:0,why:"A normal QT with ischemic ST changes points to ischemic re-entry rather than EAD-triggered torsades."}},
+{id:"vflutter",cat:"rhythm",name:"Ventricular flutter",
+ feats:["Regular sine-wave oscillation near 250–300/min","QRS, ST and T cannot be separated","No isoelectric baseline","Usually degenerates into VF"],
+ sig:"An extremely fast ventricular re-entry, usually pulseless. Treat as VF or pulseless VT: defibrillate.",
+ hints:["Can you separate QRS from T?","Is it regular?"],sim:["vt","vf","hyperk2","artifact"],
+ vs:{vt:"Monomorphic VT at 150–220/min keeps a distinguishable QRS and T.",vf:"VF varies in rate and amplitude.",hyperk2:"Sine-wave hyperkalemia is slow, usually under 100/min.",artifact:"Artifact lets native QRS complexes march through."}},
+{id:"atypflut",cat:"rhythm",name:"Atypical (clockwise) atrial flutter",
+ feats:["Continuous flutter waves at 250–350/min","Upright F waves in II, III, aVF","Negative F waves in V1","Fixed or variable AV block"],
+ sig:"Clockwise flutter runs the cavotricuspid circuit in reverse; other atypical flutters circle surgical or ablation scars. Rate control and stroke prevention follow AF; non-isthmus circuits are harder to ablate.",
+ hints:["Which way do the flutter waves point in II?","What is the atrial rate?"],sim:["flutter","atblock","af","stach"],
+ vs:{flutter:"Typical (counterclockwise) flutter has negative sawtooth waves in II, III and aVF and positive waves in V1.",atblock:"Atrial tachycardia has discrete P waves separated by a flat baseline, at 150–250/min.",af:"AF has no organized atrial activity.",stach:"Sinus tachycardia has one P per QRS with a flat baseline."},
+ q2:{q:"Why are the flutter waves upright in the inferior leads?",opts:["The wavefront descends the septum toward the inferior leads (clockwise)","The atrial rate is slower","There is AV block","The atria are enlarged"],a:0,why:"A wavefront heading toward a lead's positive pole is positive; reversing the circuit reverses the F-wave polarity."}},
+{id:"eat",cat:"rhythm",name:"Ectopic atrial tachycardia",
+ feats:["Regular narrow-complex tachycardia, 120–220/min","One P before each QRS, with an abnormal P axis","Warm-up at onset and cool-down at offset","PR normal or slightly long"],
+ sig:"An automatic focus outside the sinus node: children, after cardiac surgery, digoxin toxicity, stimulants. Adenosine causes transient AV block (revealing the P waves) but rarely terminates it. Treat the trigger; rate control or ablation.",
+ hints:["Compare the P axis with sinus rhythm.","Is there a P before every QRS?"],sim:["stach","pjrt","svt","flutter"],
+ vs:{stach:"Sinus tachycardia has a normal P axis: upright in I, II and aVF.",pjrt:"PJRT also inverts the inferior P, but starts and stops abruptly (re-entry).",svt:"AVNRT shows no P before the QRS.",flutter:"Flutter waves continue with no flat baseline."}},
+{id:"atblock",cat:"rhythm",name:"Atrial tachycardia with block",
+ feats:["Discrete P waves at 150–250/min with a flat baseline between them","2:1 (or variable) AV conduction","Narrow QRS","A second P often hides in the T wave"],
+ sig:"Classic for digoxin toxicity: enhanced atrial automaticity from calcium overload plus vagally mediated AV-node block. Check digoxin and potassium; also seen with structural atrial disease.",
+ hints:["March out the P waves: is one hidden in each T?","Is there a flat baseline between P waves?"],sim:["flutter","avb21","stach","atypflut"],
+ vs:{flutter:"Flutter has no flat baseline and the atrial rate is usually near 300.",avb21:"2:1 AV block has a normal sinus atrial rate (60–100).",stach:"Sinus tachycardia conducts every P.",atypflut:"Atypical flutter waves are continuous, without an isoelectric baseline."},
+ q2:{q:"Which drug toxicity should you suspect first?",opts:["Digoxin","Metoprolol","Amiodarone","Verapamil"],a:0,why:"Digoxin raises atrial automaticity (delayed afterdepolarizations) and slows AV-node conduction through vagal tone."}},
+{id:"wap",cat:"rhythm",name:"Wandering atrial pacemaker",
+ feats:["Three or more P-wave shapes","Rate under 100","Varying PR and slightly irregular R–R","Narrow QRS"],
+ sig:"The dominant pacemaker shifts between the sinus node, atrial sites and the junction, usually with high vagal tone; benign. The same picture over 100/min is MAT.",
+ hints:["Count the P-wave shapes.","What is the rate?"],sim:["mat","sarr","pac","af"],
+ vs:{mat:"MAT is the same picture over 100/min, usually with lung disease.",sarr:"Sinus arrhythmia keeps one P shape.",pac:"PACs are occasional early beats with one dominant P shape.",af:"AF has no discrete P waves."}},
+{id:"orthoavrt",cat:"rhythm",name:"Orthodromic AVRT",
+ feats:["Regular narrow-complex tachycardia, 150–250/min","Retrograde P in the ST segment, RP over 70 ms","QRS alternans in some leads","Rate-related ST depression common"],
+ sig:"The commonest tachycardia with an accessory pathway: down the AV node, up the pathway. The ventricles must activate before the pathway can conduct back, so the retrograde P falls later than in AVNRT. Vagal maneuvers and adenosine terminate it.",
+ hints:["Where is the retrograde P relative to the QRS?","Does QRS amplitude alternate?"],sim:["svt","pjrt","stach","flutter"],
+ vs:{svt:"In typical AVNRT the retrograde P sits at the very end of the QRS (pseudo r′), RP under 70 ms.",pjrt:"In PJRT the P sits closer to the next QRS (long RP).",stach:"Sinus tachycardia has upright P waves before each QRS.",flutter:"Flutter waves are continuous at about 300/min."}},
+{id:"pjrt",cat:"rhythm",name:"Long-RP tachycardia (PJRT)",
+ feats:["Regular narrow-complex tachycardia, often incessant","Inverted P waves in II, III, aVF","RP longer than PR: the P sits closer to the next QRS","Narrow QRS"],
+ sig:"Permanent junctional reciprocating tachycardia uses a slowly conducting accessory pathway near the coronary sinus. Incessant tachycardia can cause cardiomyopathy. Long-RP differential: sinus tachycardia, atrial tachycardia, atypical AVNRT, PJRT.",
+ hints:["Is the P closer to the QRS before it or after it?","Which way does the P point in II?"],sim:["eat","orthoavrt","stach","svt"],
+ vs:{eat:"Low atrial tachycardia looks the same; abrupt onset and offset favor PJRT.",orthoavrt:"Orthodromic AVRT over a fast pathway has a short RP.",stach:"Sinus P waves are upright in II.",svt:"Typical AVNRT hides the P at the end of the QRS."}},
+{id:"accjunct",cat:"rhythm",name:"Accelerated junctional rhythm",
+ feats:["Narrow QRS at 60–100/min","P waves absent or retrograde (just before, inside or after the QRS)","Regular","May compete with the sinus node"],
+ sig:"Enhanced junctional automaticity: digoxin toxicity, inferior MI, myocarditis, after cardiac surgery, catecholamines. Usually harmless itself but a pointer to its cause.",
+ hints:["Find the P waves: which way do they point in II?","What rate would an escape rhythm have?"],sim:["junct","stach","nsr","svt"],
+ vs:{junct:"A junctional escape rhythm runs at 40–60.",nsr:"Sinus rhythm has upright P waves before each QRS.",svt:"AVNRT runs over 150 and starts abruptly.",stach:"Sinus tachycardia has upright P waves."}},
+/* ---- conduction ---- */
+{id:"sinusarrest",cat:"cond",name:"Sinus pause (sinus arrest)",
+ feats:["Sudden absence of P waves and QRS complexes","Pause is not a multiple of the P–P interval","Pause may end with a junctional escape","Sinus rhythm before and after"],
+ sig:"Failure of impulse formation in the sinus node: sick sinus syndrome, drugs, vagal surges, hyperkalemia, ischemia. Pauses over 3 seconds while awake, or symptoms, warrant pacing evaluation.",
+ hints:["Measure the pause against the P–P interval.","What ends the pause?"],sim:["saexit","mob2","pac","avb21"],
+ vs:{saexit:"In SA exit block the pause is an exact multiple of the P–P: the node fired but the impulse could not exit.",mob2:"In Mobitz II a P wave arrives on time without a QRS.",pac:"A blocked PAC leaves a premature P (often in the T) before the pause.",avb21:"2:1 block has a P between every pair of QRS complexes."}},
+{id:"saexit",cat:"cond",name:"Sinoatrial exit block",
+ feats:["Pause exactly two (or more) P–P intervals long","No P wave during the pause","Regular sinus rhythm otherwise","The Wenckebach form shows shortening P–P before the pause"],
+ sig:"The sinus node keeps firing but the impulse fails to reach the atrium; the P–P arithmetic proves it. Causes overlap with sinus arrest: vagal tone, drugs, ischemia, fibrosis.",
+ hints:["Measure the pause with calipers against two normal P–P intervals."],sim:["sinusarrest","mob2","avb21","sarr"],
+ vs:{sinusarrest:"Sinus arrest pauses bear no relation to the P–P interval.",mob2:"In Mobitz II the P wave is present; only the QRS is missing.",sarr:"Sinus arrhythmia changes gradually with breathing.",avb21:"In 2:1 block P waves keep coming; only the QRS drops."}},
+{id:"hgavb",cat:"cond",name:"High-grade (advanced) AV block",
+ feats:["Two or more consecutive P waves fail to conduct (3:1 or higher)","Constant PR when conduction occurs","Slow ventricular rate","Often a wide QRS: infranodal disease"],
+ sig:"More dangerous than Mobitz II and one step from complete block. Prepare transcutaneous pacing; most need a permanent pacemaker unless a reversible cause is found (inferior MI, drugs, hyperkalemia, Lyme disease).",
+ hints:["Count P waves per QRS.","Is the PR constant on the conducted beats?"],sim:["avb3","avb21","mob2","sbrady"],
+ vs:{avb3:"In complete block no P conducts: the PR varies at random.",avb21:"2:1 block conducts every other P.",mob2:"Mobitz II drops single P waves between runs of conducted beats.",sbrady:"Sinus bradycardia has one P per QRS."}},
+{id:"isodiss",cat:"cond",name:"Isorhythmic AV dissociation",
+ feats:["Sinus and junctional rhythms at nearly the same rate","P waves drift into, through and out of the QRS","Narrow QRS","Not AV block: well-timed P waves would conduct"],
+ sig:"The sinus node slows just below the junction (vagal tone, drugs, inferior MI) and the junction takes over. Usually benign; distinguish from complete block, where the atrial rate is faster than the ventricular rate.",
+ hints:["Compare atrial and ventricular rates.","Where does the P sit relative to the QRS across the strip?"],sim:["avb3","accjunct","junct","sarr"],
+ vs:{avb3:"In complete block the atrial rate exceeds the ventricular rate and even well-timed P waves fail.",accjunct:"Accelerated junctional rhythm alone has retrograde or absent P waves, not drifting sinus P waves.",junct:"A junctional escape rhythm runs slower than the sinus rate would."}},
+{id:"ashman",cat:"cond",name:"Ashman phenomenon (aberrancy in AF)",
+ feats:["Atrial fibrillation","An RBBB-shaped beat ending a long–short R–R sequence","Same initial vector as the normal beats","Usually isolated, sometimes short runs"],
+ sig:"Refractoriness follows the previous cycle: a long cycle lengthens the right bundle's refractory period, so the next early impulse finds it still refractory. Not a PVC; no treatment needed.",
+ hints:["Measure the two R–R intervals before the odd beat.","What shape is it in V1?"],sim:["pvc","af","rbbb","svtab"],
+ vs:{pvc:"PVCs have a bizarre QRS unrelated to the preceding cycle lengths.",svtab:"Aberrancy there is sustained at a fast rate.",af:"Ordinary AF beats share one narrow shape.",rbbb:"Fixed RBBB affects every beat."},
+ q2:{q:"Why does the preceding long cycle matter?",opts:["Refractoriness lengthens after a long cycle, so the next early beat finds the bundle refractory","The atria fire faster","The AV node blocks","Potassium rises"],a:0,why:"Action potential duration, and so refractoriness, adapts to the preceding cycle length."}},
+{id:"altbbb",cat:"cond",name:"Alternating bundle branch block",
+ feats:["RBBB and LBBB shapes alternating beat to beat (or tracing to tracing)","Sinus rhythm with a P before each QRS","Both bundles diseased","PR may vary too"],
+ sig:"Disease of both bundles: a Class I indication for a permanent pacemaker because complete heart block is imminent.",
+ hints:["Compare consecutive beats in V1."],sim:["bidir","bifasc","rbbb","lbbb"],
+ vs:{bidir:"Bidirectional VT has no P waves and a fast rate.",bifasc:"Bifascicular block keeps one fixed pattern.",rbbb:"Isolated RBBB never changes shape.",lbbb:"Isolated LBBB never changes shape."},
+ q2:{q:"Appropriate management?",opts:["Permanent pacemaker","Observation","Beta-blocker","Repeat ECG in a year"],a:0,why:"Failure of both bundles predicts complete heart block."}},
+{id:"ivcd",cat:"cond",name:"Nonspecific intraventricular conduction delay",
+ feats:["QRS 110 ms or more","Shape fits neither RBBB nor LBBB","Slurring throughout, often low amplitude","Cardiomyopathy, scar or drugs"],
+ sig:"Slow cell-to-cell conduction through diseased myocardium rather than one failed bundle. Exclude sodium-channel drugs and hyperkalemia; it predicts worse outcomes in heart failure.",
+ hints:["Is there an rsR′ in V1?","A broad notched R in I and V6?"],sim:["lbbb","rbbb","hyperk","tca"],
+ vs:{lbbb:"LBBB has a broad monophasic R in I and V6 with QS or rS in V1.",rbbb:"RBBB has rsR′ in V1 and a wide S in I and V6.",tca:"TCA toxicity adds a tall terminal R in aVR and tachycardia.",hyperk:"Hyperkalemia widens the QRS with peaked T and flattened P."}},
+/* ---- pacing ---- */
+{id:"aai",cat:"pace",name:"Atrial pacing",
+ feats:["Pacing spike before each P wave","Paced P may differ in shape from sinus","Native AV conduction: narrow QRS after a normal or long PR","Rate at the programmed lower rate"],
+ sig:"For sinus node disease with intact AV conduction. Bipolar atrial spikes are tiny: look at the start of each P.",
+ hints:["What precedes each P wave?"],sim:["vpace","nsr","avb1","wap"],
+ vs:{vpace:"Ventricular pacing gives a wide QRS after the spike.",nsr:"No spikes and normal sinus P waves.",avb1:"First-degree block has a long PR without spikes.",wap:"Wandering pacemaker has changing P shapes without spikes."}},
+{id:"crt",cat:"pace",name:"Biventricular (CRT) pacing",
+ feats:["Spikes (often two close together) before each QRS","Paced QRS narrower than RV-only pacing","Dominant R in V1: the LV activates early","Negative or QS in lead I"],
+ sig:"Resynchronization pacing restores simultaneous LV contraction in heart failure with LBBB. Loss of LV capture turns the QRS RV-paced (positive in I, negative in V1): arrange a device check.",
+ hints:["Compare V1 with a standard RV-paced QRS.","What is lead I doing?"],sim:["vpace","rbbb","lbbb","pacedmi"],
+ vs:{vpace:"RV apical pacing gives an LBBB-like QRS: negative V1, positive I.",rbbb:"Native RBBB has no spikes and a triphasic rsR′.",lbbb:"LBBB has a positive I and negative V1.",pacedmi:"Look for concordant ST change, not QRS direction."}},
+{id:"undersense",cat:"pace",name:"Pacemaker undersensing",
+ feats:["Spikes at the programmed interval regardless of native beats","Spikes land in ST segments or T waves","Some spikes capture, others fall in refractory tissue","Native rhythm present"],
+ sig:"The device fails to see native activity (lead dislodgement, small signals, programming, magnet). Spikes on T waves risk R-on-T ventricular arrhythmia. Arrange interrogation.",
+ hints:["Do the spikes reset after a native beat?","Where do the spikes land?"],sim:["fcap","oversense","pvc","vpace"],
+ vs:{fcap:"Failure to capture: well-timed spikes with no QRS; sensing is intact.",oversense:"Oversensing causes missing spikes and pauses, not extra spikes.",pvc:"PVCs have no spike.",vpace:"Normal pacing inhibits after each native beat."},
+ q2:{q:"What is the main danger?",opts:["A spike on a T wave (R-on-T) triggering VF","Hyperkalemia","Heart block","Pacing too slowly"],a:0,why:"A stimulus in the vulnerable period of repolarization can start polymorphic VT or VF."}},
+{id:"oversense",cat:"pace",name:"Pacemaker oversensing",
+ feats:["Unexpected pause with no pacing spikes","Noise or myopotentials visible during the pause","Pacing resumes after the noise","Native escape may appear"],
+ sig:"The device mistakes non-cardiac signals (pectoral myopotentials, lead-fracture noise, electromagnetic interference, T waves) for beats and withholds pacing. Dangerous if pacemaker dependent.",
+ hints:["Is there electrical noise during the pause?","Should the pacemaker have fired?"],sim:["sinusarrest","fcap","undersense","artifact"],
+ vs:{sinusarrest:"Without a device, a pause has no spikes before or after.",fcap:"In failure to capture spikes are present but no QRS follows.",undersense:"Undersensing adds spikes; oversensing removes them.",artifact:"Artifact alone does not stop the rhythm."}},
+{id:"pmt",cat:"pace",name:"Pacemaker-mediated tachycardia",
+ feats:["Ventricular-paced tachycardia at or near the upper rate limit","Retrograde P after each paced QRS","Each retrograde P is sensed and triggers the next paced beat","Starts after a PVC or loss of atrial capture"],
+ sig:"An endless loop: the device is the antegrade limb and the AV node the retrograde limb. A magnet (asynchronous mode) stops it; lengthening the post-ventricular atrial refractory period prevents it.",
+ hints:["What follows each paced QRS?","At what rate is it pacing?"],sim:["vt","vpace","antidromic","stach"],
+ vs:{vt:"VT lacks pacing spikes.",vpace:"Normal tracking follows sinus P waves at a physiologic rate.",antidromic:"Antidromic AVRT has no spikes.",stach:"Sinus tachycardia conducts natively."},
+ q2:{q:"What terminates it immediately?",opts:["A magnet over the device","Adenosine","Amiodarone","Carotid massage"],a:0,why:"A magnet forces asynchronous pacing, atrial sensing stops and the loop breaks."}},
+{id:"tcp",cat:"pace",name:"Transcutaneous pacing: confirming capture",
+ feats:["Large pacing artifacts at the set rate","No capture: artifact without a following wide QRS and T","Capture: each artifact followed by a wide QRS and broad T","Confirm mechanical capture with a femoral pulse"],
+ sig:"The external artifact is huge and can mimic a QRS. Electrical capture is a wide QRS with a T after every spike; mechanical capture is a pulse at the paced rate. Increase output until both are present.",
+ hints:["After each spike, is there a T wave?"],sim:["fcap","vpace","artifact","avb3"],
+ vs:{fcap:"Implanted devices produce tiny spikes.",vpace:"A permanent pacemaker gives small spikes with consistent capture.",artifact:"Motion artifact is irregular, not at a set rate.",avb3:"Complete block without pacing shows P waves marching through."}},
+/* ---- channelopathies & cardiomyopathies ---- */
+{id:"takotsubo",cat:"chan",name:"Takotsubo (stress) cardiomyopathy",
+ feats:["Deep, wide, symmetric T inversion across precordial and limb leads","Markedly prolonged QT","No pathologic Q waves (ST elevation early, then T inversion)","Not confined to one coronary territory"],
+ sig:"A catecholamine surge (emotional or physical stress, often postmenopausal women; also stroke or seizure) stuns the apical myocardium. Angiography is needed to exclude occlusion. The long QT carries torsades risk.",
+ hints:["Do the T waves follow a single coronary territory?","Measure the QT."],sim:["wellens","cerebralT","apicalhcm","antstemi"],
+ vs:{wellens:"Wellens T inversion stays in V2–V3 (LAD territory) with a normal QT.",cerebralT:"Cerebral T waves share the catecholamine mechanism; the trigger is an intracranial event.",apicalhcm:"Apical HCM T inversion is chronic, with tall precordial voltage.",antstemi:"Acute STEMI has territorial ST elevation with reciprocal change."}},
+{id:"arvc",cat:"chan",name:"Arrhythmogenic right ventricular cardiomyopathy",
+ feats:["Epsilon wave: a small notch after the QRS in V1–V3","T inversion in V1–V3 (beyond age 14, without RBBB)","Prolonged terminal activation in V1–V3","PVCs or VT with LBBB shape"],
+ sig:"Fibrofatty replacement of RV muscle slows conduction (the epsilon wave is late RV activation) and creates re-entry. A cause of sudden death in young athletes; exertion accelerates the disease. Refer for imaging; avoid competitive sport.",
+ hints:["Look just after the QRS in V1.","What are the T waves doing in V1–V3?"],sim:["brugada","rbbb","child","wellens"],
+ vs:{brugada:"Brugada is coved ST elevation in V1–V2, not a late notch with T inversion.",rbbb:"RBBB has a wide terminal R′ in V1 and a wide S in I.",child:"Juvenile T inversion in V1–V3 is normal before adolescence and has no epsilon wave.",wellens:"Wellens follows chest pain, in V2–V3, without an epsilon wave."}},
+{id:"brugada2",cat:"chan",name:"Brugada type 2 (saddleback)",
+ feats:["Saddleback ST in V1–V2: high J point, ST dips, then rises into an upright T","J point elevated 2 mm or more","Not diagnostic alone","May convert to type 1 with fever, sodium-channel blockers, or V1–V2 placed one space higher"],
+ sig:"Only the coved type 1 pattern is diagnostic. Type 2 needs high-lead recording or provocation. Treat fever early and avoid sodium-channel blockers (brugadadrugs.org).",
+ hints:["Describe the ST shape in V2.","Coved or saddle?"],sim:["brugada","rbbb","erp","v1v2high"],
+ vs:{brugada:"Type 1 is coved, falling into an inverted T.",erp:"Early repolarization is lateral or inferior with concave elevation.",v1v2high:"High electrodes give negative P waves and rSr′ without a saddle ST.",rbbb:"RBBB has a wide terminal R′ and wide S in I and V6."}},
+{id:"shortqt",cat:"chan",name:"Short QT syndrome",
+ feats:["QTc under 340–360 ms","Little or no ST segment: the T starts right after the QRS","Tall, peaked, symmetric precordial T waves","QT barely changes with rate"],
+ sig:"Gain-of-function potassium-channel mutations (or loss of calcium current) shorten atrial and ventricular refractoriness: AF and sudden death. Exclude hypercalcemia, hyperkalemia, digoxin and hyperthermia.",
+ hints:["Measure the QT and compare it with half the R–R."],sim:["hyperca","hyperk1","dig","nsr"],
+ vs:{hyperca:"Hypercalcemia shortens the ST segment while the T itself stays normal.",hyperk1:"Hyperkalemic T waves peak, but the QT is not as short and it reverses.",dig:"Digoxin scoops the ST instead of peaking the T.",nsr:"A normal QTc is 360–450 ms."}},
+{id:"lqt3",cat:"chan",name:"Long QT type 3 pattern (late sodium current)",
+ feats:["Long, flat, isoelectric ST segment","Late, narrow, often peaked T","Marked QTc prolongation, worst at slow rates","Events at rest or during sleep"],
+ sig:"An SCN5A mutation leaves a persistent inward sodium current during the plateau, lengthening it. Mexiletine (late-sodium blocker) shortens the QT; beta-blockers help less than in LQT1.",
+ hints:["Is the ST long and flat, or is the T broad?"],sim:["lqt","hypoca","cerebralT","hypothermia"],
+ vs:{lqt:"LQT1 has a broad-based T and LQT2 a low, notched T; here the ST is long and the T narrow.",hypoca:"Hypocalcemia gives the same shape; check the calcium.",cerebralT:"Cerebral T waves are giant and inverted.",hypothermia:"Hypothermia adds Osborn waves and shivering."},
+ q2:{q:"Which drug specifically shortens the QT in LQT3?",opts:["Mexiletine","Sotalol","Erythromycin","Ondansetron"],a:0,why:"Mexiletine blocks the late sodium current that prolongs the plateau."}},
+{id:"apicalhcm",cat:"chan",name:"Apical hypertrophic cardiomyopathy",
+ feats:["Giant negative T waves in V2–V5 (often over 10 mm)","High precordial QRS voltage","No Q waves","Chronic and stable on serial tracings"],
+ sig:"Hypertrophy confined to the apex (Yamaguchi syndrome). Mistaken for ischemia; echo or MRI shows the spade-shaped LV cavity.",
+ hints:["How tall is the QRS?","Do the T waves change over time?"],sim:["wellens","takotsubo","lvh","cerebralT"],
+ vs:{wellens:"Wellens T inversion is in V2–V3 without high voltage and evolves after chest pain.",takotsubo:"Takotsubo is acute, with long QT and normal voltage.",lvh:"Typical LVH strain is asymmetric lateral T inversion.",cerebralT:"Cerebral T waves come with a very long QT and a neurologic event."}},
+{id:"amyloid",cat:"chan",name:"Cardiac amyloidosis",
+ feats:["Low QRS voltage in the limb leads","Pseudo-infarct pattern: QS or poor R progression in V1–V3","Thick walls on echo despite low voltage (voltage–mass mismatch)","AV block or AF common"],
+ sig:"Amyloid infiltrates and replaces myocytes: mass rises but electrically active tissue falls. Low voltage with thick walls should prompt testing for transthyretin or light-chain amyloidosis.",
+ hints:["Check the limb lead voltages.","What voltage would thick walls normally produce?"],sim:["effusion","copd","oldimi","lvh"],
+ vs:{effusion:"Effusion lowers voltage with tachycardia and alternans; the walls are not thick.",copd:"Emphysema lowers voltage with a rightward axis and P pulmonale.",lvh:"True hypertrophy raises voltage.",oldimi:"A true infarct Q is localized with a matching wall-motion defect."}},
+/* ---- structure ---- */
+{id:"asd",cat:"struct",name:"Atrial septal defect (secundum)",
+ feats:["Incomplete RBBB (rSr′ in V1, QRS under 120 ms)","Right axis deviation","Notch near the R-wave peak in II, III, aVF (crochetage)","First-degree AV block or atrial arrhythmias in adults"],
+ sig:"A left-to-right shunt volume-loads the right ventricle and delays activation of its outflow tract. Crochetage in all three inferior leads is highly specific.",
+ hints:["Look at V1.","Look closely at the top of the inferior R waves."],sim:["rbbb","rvh","brugada2","nsr"],
+ vs:{rbbb:"Complete RBBB has a QRS of 120 ms or more.",rvh:"RVH has a dominant R in V1 with strain and a tall P.",brugada2:"Brugada type 2 adds a saddleback ST.",nsr:"A normal V1 is rS."}},
+{id:"copd",cat:"struct",name:"Chronic lung disease (emphysema) pattern",
+ feats:["Low QRS voltage, especially in the limb leads and V5–V6","Right or indeterminate axis","P pulmonale: tall, peaked P in II, III, aVF","Poor R progression; often sinus tachycardia or MAT"],
+ sig:"Hyperinflated lungs insulate the heart and push it down and vertical; pulmonary hypertension adds right atrial and ventricular strain.",
+ hints:["Compare P height with QRS height in II.","Why might the voltage be low?"],sim:["effusion","amyloid","rvh","pe"],
+ vs:{effusion:"Effusion lowers voltage with alternans and no P pulmonale.",amyloid:"Amyloid lowers voltage with pseudo-infarct Q waves and a normal P.",pe:"PE is acute: S1Q3T3 with T inversion V1–V4.",rvh:"RVH has a dominant R in V1 and normal or high voltage."}},
+/* ---- normal variants ---- */
+{id:"athlete",cat:"normal",name:"Athlete's heart",
+ feats:["Sinus bradycardia (often 40–50)","First-degree AV block","High QRS voltage meeting LVH criteria","Early repolarization"],
+ sig:"Training raises vagal tone and muscle mass. Not explained by training and needing work-up: lateral T inversion, pathologic Q waves, LBBB, epsilon waves, Brugada type 1, long or short QT, pre-excitation.",
+ hints:["What does high vagal tone do to rate and PR?"],sim:["lvh","erp","sbrady","avb1"],
+ vs:{lvh:"Pathologic LVH adds strain (lateral ST depression, T inversion) and left atrial enlargement.",erp:"The same repolarization without the bradycardia and voltage.",sbrady:"Plain sinus bradycardia lacks the voltage and repolarization changes.",avb1:"Isolated first-degree block without the training picture."}},
+{id:"child",cat:"normal",name:"Normal pediatric ECG",
+ feats:["Faster rate and shorter intervals than adults","Right axis and prominent R in V1 (RV dominance from fetal life)","T inversion in V1–V3 is normal from the first week to adolescence","Prominent sinus arrhythmia"],
+ sig:"The fetal right ventricle pumps against systemic pressure, so it starts as thick as the left; the adult pattern emerges through childhood. An upright T in V1 after the first week (before adolescence) suggests RVH.",
+ hints:["Which ventricle dominates at birth?"],sim:["rvh","wellens","arvc","stach"],
+ vs:{rvh:"In an adult, a dominant R in V1 with right axis is RVH.",arvc:"In an adult, T inversion in V1–V3 raises concern for ARVC.",wellens:"Wellens is an adult ischemic pattern after chest pain.",stach:"The rate is normal for age."}},
+/* ---- electrolytes & drugs, staged ---- */
+{id:"hyperk1",cat:"meta",name:"Hyperkalemia, early: peaked T",
+ feats:["Tall, narrow-based, symmetric, tented T waves","Most visible in V2–V4 and II","Normal P, PR and QRS","QT normal or short"],
+ sig:"Often around K⁺ 5.5–6.5 mmol/L, though the ECG correlates loosely with the level. Stop potassium sources, shift with insulin and glucose, treat the cause; give calcium as soon as the P or QRS changes.",
+ hints:["Is the base of the T narrow or broad?"],sim:["hyperT","erp","hyperk","shortqt"],
+ vs:{hyperT:"Hyperacute T waves are broad-based and territorial.",hyperk:"Moderate hyperkalemia adds P flattening, PR lengthening and QRS widening.",erp:"Early repolarization T waves are broad and come with J notching.",shortqt:"Short QT syndrome is lifelong, with a very short QT."}},
+{id:"hyperk3",cat:"meta",name:"Hyperkalemia, severe: no P waves, wide QRS",
+ feats:["P waves lost","Very wide QRS","Peaked T","Slow, regular rhythm approaching a sine wave"],
+ sig:"Usually K⁺ above 8 mmol/L and pre-arrest. IV calcium immediately, then insulin-glucose, beta-agonist and dialysis. Atropine works poorly.",
+ hints:["Can you find P waves?","How wide is the QRS?"],sim:["hyperk2","aivr","avb3","junct"],
+ vs:{hyperk2:"The sine wave is the next stage: QRS and T merge.",aivr:"AIVR has normal T waves at 60–100.",avb3:"Complete block shows P waves marching through.",junct:"Junctional rhythm has a narrow QRS."},
+ q2:{q:"First treatment?",opts:["IV calcium","Atropine","Amiodarone","Adenosine"],a:0,why:"Calcium raises the threshold potential, restoring the gap between resting and threshold potential within minutes."}},
+{id:"brash",cat:"meta",name:"BRASH syndrome",
+ feats:["Bradycardia, often junctional, without visible P waves","Only moderately peaked T waves","Renal failure, AV-nodal blockers and hyperkalemia together","Narrow or mildly wide QRS"],
+ sig:"Bradycardia, Renal failure, AV-nodal blockade, Shock, Hyperkalemia: modest hyperkalemia and AV blockers act synergistically in a vicious cycle. Treat every part: calcium, insulin-glucose, fluids, stop blockers, epinephrine if needed.",
+ hints:["Is the potassium effect alone enough to explain this?"],sim:["junct","hyperk3","sbrady","avb3"],
+ vs:{junct:"A benign junctional rhythm lacks the metabolic context and peaked T.",hyperk3:"Severe hyperkalemia alone widens the QRS markedly.",sbrady:"Sinus bradycardia has P waves.",avb3:"Complete block shows dissociated P waves."}},
+{id:"hypok2",cat:"meta",name:"Hypokalemia, severe",
+ feats:["Large U waves exceeding the T","T flat or inverted, ST depression","Apparent long QT (really QU)","Frequent PVCs; risk of torsades and VF"],
+ sig:"Usually K⁺ under 2.5 mmol/L. Replace potassium and magnesium with monitoring. Repolarization reserve is low, so QT-prolonging drugs are hazardous.",
+ hints:["What is the wave after the T?","What is the rhythm doing?"],sim:["hypok","lqt","dig","hypomg"],
+ vs:{hypok:"Milder hypokalemia shows a small U wave without ectopy.",lqt:"In long QT the T itself is long; here the T is small and the U large.",dig:"Digoxin scoops the ST and shortens the QT.",hypomg:"Hypomagnesemia lengthens the T itself."}},
+{id:"hypomg",cat:"meta",name:"Hypomagnesemia",
+ feats:["QT prolongation with broad T and U waves","PVCs, R-on-T","Usually with low potassium and calcium","Torsades risk"],
+ sig:"Magnesium is a cofactor for the Na⁺/K⁺-ATPase and steadies L-type calcium channels. Low magnesium lowers potassium and promotes early afterdepolarizations. Give IV magnesium; potassium will not correct until magnesium does.",
+ hints:["Measure the QT.","Where does the PVC fall?"],sim:["lqt","hypok2","hypoca","tdp"],
+ vs:{lqt:"The ECG alone cannot separate them; check magnesium in every long QT.",hypoca:"Hypocalcemia lengthens the ST with a normal T.",hypok2:"Severe hypokalemia shrinks the T and enlarges the U.",tdp:"Torsades is the arrhythmia this substrate produces."}},
+{id:"renal",cat:"meta",name:"Renal failure: high K⁺ with low Ca²⁺",
+ feats:["Peaked, narrow T waves (hyperkalemia)","Long, flat ST segment (hypocalcemia)","LVH voltage from hypertension","Long QT ending in a peaked T"],
+ sig:"Kidney failure pairs hyperkalemia with hypocalcemia, and both are visible at once because each acts on a different phase of the action potential: K⁺ on phase 3, Ca²⁺ on phase 2.",
+ hints:["Look at the ST segment and the T wave separately."],sim:["hyperk1","hypoca","lvh","lqt"],
+ vs:{hyperk1:"Hyperkalemia alone has a normal or short QT.",hypoca:"Hypocalcemia alone has a normal T shape.",lvh:"LVH alone has asymmetric lateral strain.",lqt:"Long QT syndromes broaden or notch the T."}},
+{id:"digtox",cat:"meta",name:"Digoxin toxicity: “regularized” AF",
+ feats:["Fibrillatory atrial baseline","Regular ventricular rhythm: complete AV block with a junctional escape","Scooped ST depression","Rate often 40–70"],
+ sig:"In AF the ventricular rhythm should be irregular; regularity means the AV node is blocked and an escape focus has taken over. Check potassium, renal function and the digoxin level; give digoxin-specific antibody fragments for dangerous rhythms.",
+ hints:["AF should be irregular. Is it?"],sim:["af","junct","dig","avb3"],
+ vs:{af:"Ordinary AF is irregularly irregular.",dig:"Therapeutic digoxin effect: scooped ST with an expected rhythm.",junct:"A junctional rhythm without fibrillatory waves.",avb3:"Complete block from other causes shows sinus P waves."},
+ q2:{q:"What explains the regular rhythm?",opts:["Complete AV block with a junctional escape","Conversion to sinus rhythm","Atrial flutter","Good rate control"],a:0,why:"Digoxin's vagal effect plus direct toxicity blocks the AV node while enhancing junctional automaticity."}},
+{id:"flec",cat:"meta",name:"Class IC (flecainide) toxicity",
+ feats:["Long PR and wide QRS (worse at faster rates)","Brugada-like coved ST in V1–V2 possible","Bradycardia, or a wide-complex tachycardia","QT long mainly from QRS widening"],
+ sig:"Sodium-channel block with slow unbinding. Treat with sodium bicarbonate (sodium load plus alkalinization) and avoid other sodium blockers; flutter on flecainide can conduct 1:1 with a wide QRS.",
+ hints:["Is every conduction interval longer?"],sim:["tca","hyperk","ivcd","brugada"],
+ vs:{tca:"TCA toxicity is tachycardic with a tall R in aVR (anticholinergic).",hyperk:"Hyperkalemia peaks the T and flattens the P.",ivcd:"IVCD from scar leaves the PR normal.",brugada:"Congenital Brugada has a normal PR and QRS."},
+ q2:{q:"Which treatment counters the sodium-channel block?",opts:["Sodium bicarbonate","Amiodarone","Procainamide","Magnesium"],a:0,why:"A sodium load and alkalinization reduce drug binding and restore phase 0 current."}},
+/* ---- mimics & technical ---- */
+{id:"cerebralT",cat:"mimic",name:"Cerebral T waves",
+ feats:["Giant, wide, inverted T waves, often over 10 mm","Markedly prolonged QT","Bradycardia, U waves","Widespread, not territorial"],
+ sig:"Subarachnoid or intracerebral hemorrhage, or raised intracranial pressure, triggers a catecholamine and autonomic storm on the myocardium. Recognize it before sending a neurologic emergency to the cath lab.",
+ hints:["What is the QT?","Do the T waves follow a coronary territory?"],sim:["takotsubo","wellens","apicalhcm","lqt"],
+ vs:{takotsubo:"Takotsubo shares the catecholamine mechanism; the trigger and wall-motion pattern differ.",wellens:"Wellens stays in V2–V3 with a normal QT.",lqt:"Congenital long QT does not produce giant inverted T waves.",apicalhcm:"Apical HCM has high voltage and a normal QT."},
+ q2:{q:"Which event most likely explains this tracing?",opts:["Subarachnoid hemorrhage","Hypokalemia","Pericarditis","Pulmonary embolism"],a:0,why:"The sympathetic surge from the brain injures myocardium and delays repolarization."}},
+{id:"v1v2high",cat:"mimic",name:"V1 and V2 placed too high",
+ feats:["Negative or biphasic P in V1 and V2","rSr′ resembling incomplete RBBB","T inversion in V1–V2","Normal limb leads"],
+ sig:"Electrodes in the second intercostal space look down on the atria and outflow tract. Mimics RBBB, Brugada type 2, old anterior MI or Wellens; check placement before acting.",
+ hints:["What is the P doing in V1?"],sim:["brugada2","rbbb","oldimi","wellens"],
+ vs:{brugada2:"Brugada type 2 has a saddleback ST with a normal P.",rbbb:"RBBB widens the QRS and slurs the S in I and V6.",oldimi:"Infarct Q waves persist with correct placement.",wellens:"Wellens follows chest pain and does not invert the P."}},
+{id:"lallrev",cat:"mimic",name:"LA/LL electrode reversal",
+ feats:["Lead III inverted","I and II swap; aVL and aVF swap","P taller in I than in II (normally II is larger)","Precordial leads unaffected"],
+ sig:"Easy to miss; it can create or hide inferior Q waves. A P wave larger in I than in II is the clue.",
+ hints:["Compare the P wave in I with II."],sim:["lrrev","oldimi","lafb","nsr"],
+ vs:{lrrev:"LA/RA reversal inverts lead I.",oldimi:"True inferior Q waves come without a P-wave swap.",lafb:"LAFB changes the QRS axis, not the P.",nsr:"Normally the P is tallest in II."}},
+{id:"rarl",cat:"mimic",name:"RA/RL electrode reversal",
+ feats:["Lead II almost flat","aVR and aVF nearly identical","Lead I looks like an inverted III","Precordial leads normal"],
+ sig:"One flat limb lead is the giveaway: it records between the left-leg electrode and the ground electrode, both on the legs.",
+ hints:["Which lead is flat?"],sim:["lrrev","lallrev","effusion","dextro"],
+ vs:{lrrev:"LA/RA reversal inverts lead I without a flat lead.",effusion:"Low voltage in every lead, not one.",lallrev:"LA/LL reversal inverts III without a flat lead.",dextro:"Dextrocardia also changes the precordial leads."}},
+{id:"cpr",cat:"mimic",name:"CPR artifact",
+ feats:["Large regular waves at the compression rate (100–120/min)","Disappear the moment compressions stop","True rhythm visible only in the pause","Identical in leads sharing an electrode"],
+ sig:"Compressions move electrodes and change impedance. Pause briefly (under 10 seconds) to see the real rhythm; here fine VF in the pause means defibrillate.",
+ hints:["What happens when compressions stop?"],sim:["vt","vf","artifact","vflutter"],
+ vs:{vt:"VT persists without compressions.",vf:"VF is the true rhythm here; the large waves are artifact.",artifact:"Motion artifact without compressions is irregular.",vflutter:"Ventricular flutter is faster and continues without compressions."},
+ q2:{q:"What does the pause show, and what next?",opts:["Fine VF: defibrillate","Asystole: epinephrine only","Organized rhythm: check a pulse","Sinus rhythm: stop CPR"],a:0,why:"Low-amplitude chaotic activity is a shockable rhythm."}},
+{id:"tremor",cat:"mimic",name:"Tremor artifact (pseudo-flutter)",
+ feats:["Regular 4–6 Hz oscillation","Present in leads using the affected limb, absent in others","Sinus P waves and QRS complexes march on time","Mimics flutter waves near 300/min"],
+ sig:"Parkinsonian or essential tremor can imitate flutter or AF. Find a lead that does not use the trembling limb (here II, which skips the left arm) and confirm sinus P waves.",
+ hints:["Is the oscillation in every lead?"],sim:["flutter","af","artifact","atypflut"],
+ vs:{flutter:"Flutter waves appear in every lead facing the atria and the QRS follows them.",af:"In AF the R–R is irregular.",artifact:"Motion artifact is irregular.",atypflut:"Atypical flutter is present in all inferior leads and V1."}},
+{id:"vswap",cat:"mimic",name:"Precordial cable swap (V2/V4)",
+ feats:["R-wave progression breaks: V2 looks like V4 and vice versa","QRS and T jump abruptly between neighbors","Limb leads normal","Mimics infarction or poor R progression"],
+ sig:"Precordial leads should change gradually from V1 to V6. A reversal that then returns to normal points to swapped cables, not disease.",
+ hints:["Does the R wave grow smoothly from V1 to V6?"],sim:["oldimi","lvan","dextro","v1v2high"],
+ vs:{dextro:"Dextrocardia shows R waves shrinking steadily across all six leads plus an inverted lead I.",lvan:"Aneurysm has QS waves with persistent ST elevation.",oldimi:"Infarct changes follow a territory.",v1v2high:"High electrodes affect only V1–V2 and invert the P."}}
+);
+P.forEach(p=>PM[p.id]=p);
+
+/* ============ mechanism layer: concept graph + per-pattern "why it looks this way" ============ */
+const DOM={cell:"Cellular electrophysiology",cond:"Conduction & circuits",flow:"Coronary flow & injury",struct:"Mass, geometry & leads",sys:"Systemic, drugs & signals"};
+/* d: domain · n: name · s: the mechanism in one sentence · lab: the mechanism lab that shows it */
+const CON={
+ restK:{d:'cell',n:'Resting potential & extracellular K⁺',s:'Resting potential is set by the K⁺ gradient: high extracellular K⁺ depolarizes cells (and inactivates Na⁺ channels); low K⁺ hyperpolarizes them and weakens K⁺ currents.',lab:'ap'},
+ naAvail:{d:'cell',n:'Na⁺-channel availability (phase 0)',s:'The speed of the phase 0 upstroke, and so conduction velocity and QRS width, depends on how many fast Na⁺ channels are available to open.',lab:'ap'},
+ ito:{d:'cell',n:'Ito and the epicardial notch (phase 1)',s:'A transient outward K⁺ current notches the epicardial action potential far more than the endocardial one; the transmural gradient during that notch appears as a J wave.',lab:'ap'},
+ plateau:{d:'cell',n:'The Ca²⁺ plateau (phase 2)',s:'The plateau balances inward L-type Ca²⁺ against outward K⁺ current and sets the length of the ST segment.',lab:'ap'},
+ repol:{d:'cell',n:'Phase 3 repolarization (IKr, IKs)',s:'Outward IKr and IKs currents end the action potential; their strength sets the QT and the shape of the T wave.',lab:'ap'},
+ disp:{d:'cell',n:'Dispersion of repolarization',s:'The T wave is the voltage gradient between layers that repolarize at different times; epicardium normally repolarizes first, so the T follows the QRS direction.',lab:'ap'},
+ ead:{d:'cell',n:'Early afterdepolarizations',s:'When repolarization is prolonged, L-type Ca²⁺ channels reopen during phase 2–3 and fire triggered beats (R-on-T, torsades).',lab:'ap'},
+ dad:{d:'cell',n:'Delayed afterdepolarizations',s:'Ca²⁺ overload (digoxin, catecholamines, mutant ryanodine receptors) causes spontaneous Ca²⁺ release after repolarization, which triggers extra beats.',lab:null},
+ auto:{d:'cell',n:'Automaticity & the pacemaker hierarchy',s:'Phase 4 depolarization sets each pacemaker’s rate: sinus node 60–100, junction 40–60, ventricle 20–40; the fastest site leads, and enhanced foci can outrun the sinus node.',lab:'cond'},
+ autonom:{d:'cell',n:'Autonomic tone',s:'Acetylcholine flattens phase 4 and slows the AV node; catecholamines steepen phase 4 and speed conduction.',lab:null},
+ mg:{d:'cell',n:'Magnesium & the Na⁺/K⁺ pump',s:'Magnesium is a cofactor for the Na⁺/K⁺-ATPase and steadies Ca²⁺ and K⁺ channels; deficiency drains K⁺ and promotes afterdepolarizations.',lab:null},
+ genetic:{d:'cell',n:'Inherited channel and structural defects',s:'A mutant channel or structural protein exaggerates one phase of the action potential, or one tissue property, in every cell of the heart.',lab:'ap'},
+ decrem:{d:'cond',n:'Decremental (AV-nodal) conduction',s:'Ca²⁺-dependent nodal tissue conducts more slowly the faster it is stimulated: PR lengthening, Wenckebach, and protection of the ventricles from fast atrial rates.',lab:'cond'},
+ allnone:{d:'cond',n:'All-or-none His–Purkinje conduction',s:'Na⁺-dependent His–Purkinje tissue conducts at full speed or fails abruptly, so infranodal block drops beats without PR warning.',lab:'cond'},
+ reentry:{d:'cond',n:'Re-entry',s:'Two pathways, unidirectional block and slow enough conduction let one wavefront circle continuously; re-entrant rhythms start and stop abruptly.',lab:'cond'},
+ accpath:{d:'cond',n:'Accessory pathways',s:'A strand of muscle bridging atrium and ventricle bypasses AV-nodal delay and lacks its decremental protection.',lab:'cond'},
+ bbb:{d:'cond',n:'Bundle-branch block',s:'When a bundle fails, its ventricle is activated late from the other side; the late, slow wave points toward the blocked ventricle and widens the QRS.',lab:'cond'},
+ fasc:{d:'cond',n:'Fascicular activation & axis',s:'Blocking a fascicle moves where LV activation starts; the last region to activate pulls the frontal axis toward itself.',lab:'cond'},
+ myo:{d:'cond',n:'Muscle-to-muscle conduction',s:'Activation that bypasses the Purkinje network travels through working myocardium at a fraction of the speed, so the QRS becomes wide and slurred.',lab:'cond'},
+ secST:{d:'cond',n:'Secondary ST-T change',s:'Abnormal depolarization forces abnormal repolarization: the ST and T point opposite the dominant or terminal QRS without any ischemia.',lab:null},
+ seq:{d:'cond',n:'Activation sequence & lead vectors',s:'A lead records positive when activation moves toward its positive pole; every waveform is the projection of the activation sequence onto that lead.',lab:'cond'},
+ fusion:{d:'cond',n:'Fusion & capture',s:'Two wavefronts activating the same ventricle produce an intermediate QRS; a normally conducted capture beat proves the two chambers are dissociated.',lab:'cond'},
+ refract:{d:'cond',n:'Refractoriness & cycle length',s:'Refractoriness lengthens after a long cycle; an early impulse that finds part of the system refractory blocks or conducts aberrantly.',lab:null},
+ dissoc:{d:'cond',n:'AV dissociation',s:'Atria and ventricles follow separate pacemakers, so P waves move independently of the QRS.',lab:'cond'},
+ paced:{d:'cond',n:'Pacing: capture & sensing',s:'A device must capture (exceed tissue threshold) and sense (see native beats); each failure has its own ECG signature.',lab:'cond'},
+ supply:{d:'flow',n:'Supply–demand & subendocardial vulnerability',s:'The subendocardium is perfused only in diastole under the highest wall stress, so global or demand ischemia hits it first and shows as non-territorial ST depression.',lab:'cor'},
+ injury:{d:'flow',n:'Injury current',s:'Ischemic cells lose K⁺ and open K-ATP channels; the voltage difference with healthy tissue drives current toward the injured epicardium and raises the ST in leads facing it.',lab:'cor'},
+ recip:{d:'flow',n:'Reciprocity',s:'The same injury vector viewed from the opposite side appears as ST depression; reciprocal change confirms a true, localized injury current.',lab:'cor'},
+ territory:{d:'flow',n:'Coronary territory & dominance',s:'Each artery supplies predictable segments, so the injured wall decides which leads change.',lab:'cor'},
+ hyperacute:{d:'flow',n:'The hyperacute phase',s:'In the first minutes of occlusion, K⁺ efflux and shortened action potentials in ischemic cells make the T wave broad and bulky before the ST rises.',lab:'cor'},
+ necrosis:{d:'flow',n:'Necrosis & Q waves',s:'Dead myocardium is electrically silent; a lead over it sees the opposite wall activating away from it, giving a Q wave and lost R.',lab:'cor'},
+ reperf:{d:'flow',n:'Reperfusion & T inversion',s:'Restored flow ends the injury current; the stunned zone then repolarizes late and inverts the T over that territory.',lab:'cor'},
+ inflam:{d:'flow',n:'Epicardial inflammation',s:'Inflamed epicardium creates a diffuse, non-territorial injury current, and atrial epicardial injury shifts the PR segment.',lab:null},
+ catechol:{d:'flow',n:'Catecholamine myocardial injury',s:'A catecholamine surge overloads myocytes with Ca²⁺ and stuns them, delaying repolarization outside any coronary territory.',lab:null},
+ mass:{d:'struct',n:'Myocardial mass & voltage',s:'Voltage rises with the amount of muscle depolarizing and its closeness to the electrodes.',lab:null},
+ strain:{d:'struct',n:'Repolarization strain',s:'A thick or pressure-loaded wall repolarizes its subendocardium late, reversing the T vector: asymmetric ST-T opposite the tall QRS.',lab:null},
+ insul:{d:'struct',n:'Insulation & dilution',s:'Fluid, air, fat or infiltrate between the heart and the electrodes, or fewer working myocytes, shrinks the recorded voltage.',lab:null},
+ rvload:{d:'struct',n:'Right-ventricular load',s:'Pressure or volume load enlarges the RV and delays its activation: rightward forces, right axis and right precordial T inversion.',lab:null},
+ atrial:{d:'struct',n:'Atrial enlargement',s:'A large right atrium heightens the early P; a large left atrium prolongs and notches the late P.',lab:null},
+ position:{d:'struct',n:'Position & electrode placement',s:'Every lead is defined by where its electrodes sit relative to the heart; moving or swapping them changes the waveforms without any disease.',lab:null},
+ temp:{d:'sys',n:'Temperature',s:'Cold slows every ion channel: slower pacemakers, slower conduction, longer repolarization and an exaggerated epicardial notch.',lab:'ap'},
+ naBlock:{d:'sys',n:'Na⁺-channel-blocking drugs',s:'TCAs, class I antiarrhythmics and cocaine slow phase 0 in a rate-dependent way, widening the QRS and slowing conduction.',lab:'ap'},
+ ikrBlock:{d:'sys',n:'IKr-blocking drugs',s:'Many drugs block the hERG (IKr) channel, prolonging phase 3 and the QT and inviting early afterdepolarizations.',lab:'ap'},
+ digoxin:{d:'sys',n:'Digoxin and the Na⁺/K⁺ pump',s:'Pump inhibition raises intracellular Ca²⁺ (shorter APD, scooped ST, DADs) and increases vagal tone on the AV node.',lab:'ap'},
+ artifact:{d:'sys',n:'Signals that are not cardiac',s:'Muscle, motion, tremor and compressions add voltage to the leads that use the affected electrode, while true complexes keep their own timing.',lab:null}};
+const MECH={
+nsr:["The sinus node depolarizes spontaneously (phase 4) and the wave spreads right-to-left and downward through the atria, so the P points toward II and away from aVR. The AV node delays it (the PR) while the ventricles fill. The His–Purkinje system then activates the septum left to right (small septal q in I and V6) and both ventricles from endocardium to epicardium. Epicardium repolarizes first, so repolarization runs the opposite way and the T stays upright where the QRS is upright.",['seq','auto','disp','decrem']],
+sarr:["Inspiration briefly withdraws vagal outflow, steepening sinus-node phase 4 so the rate rises; expiration restores acetylcholine, which opens IK-ACh channels and flattens phase 4. The pacemaker site and atrial path never change, so the P never changes shape.",['autonom','auto']],
+erp:["Epicardial cells, especially in the inferolateral wall, carry a strong Ito current and notch deeply in phase 1, while endocardium barely does. That transmural gradient appears as a J-point notch or slur, and a uniform epicardial plateau lifts the ST slightly. Slow rates and high vagal tone exaggerate it.",['ito','autonom','disp']],
+sbrady:["Acetylcholine, beta-blockade, calcium-channel blockade or a reduced funny current flatten sinus-node phase 4, so threshold is reached later. Conduction is unchanged: P, PR and QRS are normal and only the interval between beats lengthens.",['auto','autonom']],
+stach:["Catecholamines (beta-1 receptors, cAMP) increase the funny current and L-type Ca²⁺ entry in sinus-node cells, steepening phase 4. Conduction is normal, so each beat keeps its P wave, which moves closer to the preceding T as diastole shortens.",['auto','autonom']],
+af:["Multiple wandering re-entrant wavelets and focal drivers (often from pulmonary-vein sleeves) fragment atrial activation into 350–600 tiny depolarizations a minute: no coordinated P wave, only a fibrillatory baseline. The AV node’s decremental, rate-dependent conduction and concealed penetration pass an irregular subset, so R–R intervals are irregularly irregular.",['reentry','decrem']],
+flutter:["One macro-re-entrant circuit circles the right atrium around the tricuspid annulus, through the slowly conducting cavotricuspid isthmus, about 300 times a minute. In the usual counterclockwise direction the wave climbs the septum, away from the inferior leads: negative sawtooth waves. The AV node cannot follow every wave, giving fixed 2:1 or 4:1 ratios.",['reentry','seq','decrem']],
+svt:["Dual AV-nodal pathways (fast with a long refractory period, slow with a short one) let a premature beat block in the fast pathway, go down the slow one and return up the fast one: a loop inside the node. Atria and ventricles activate almost together, so the retrograde P hides at the end of the QRS (pseudo r′ in V1, pseudo S inferiorly).",['reentry','decrem','seq']],
+mat:["Several atrial foci with enhanced automaticity or triggered activity, driven by hypoxia, atrial stretch, catecholamines and low Mg²⁺ or K⁺, take turns reaching threshold. Each has its own P shape and PR, so the rhythm is irregular with at least three P morphologies.",['auto','dad','mg']],
+junct:["When the sinus node fails, the next pacemaker in the hierarchy, the AV junction (intrinsic rate 40–60), escapes. Activation climbs into the atria from below (P negative in II, III, aVF) and descends the normal His–Purkinje system (narrow QRS). Where the P sits depends on which chamber is reached first.",['auto','seq']],
+pac:["An ectopic atrial focus fires before the sinus node; its different origin gives a different P axis. It enters and resets the sinus node, so the next sinus beat comes one cycle later (non-compensatory pause). A very early PAC meets a refractory AV node or bundle and blocks or conducts aberrantly.",['auto','refract','seq']],
+pvc:["A ventricular focus fires before the next sinus beat and spreads muscle to muscle instead of through the Purkinje network: a wide, bizarre QRS. Abnormal depolarization forces abnormal repolarization, so the T points opposite the QRS. The sinus node is not reset, so the next sinus P arrives on time (compensatory pause).",['myo','auto','secST']],
+vt:["A re-entrant circuit around scar (or a triggered focus) drives the ventricles independently of the atria. Activation spreads from the exit site muscle to muscle: a wide QRS whose axis reflects where the circuit exits. Sinus P waves continue at their own rate (AV dissociation) and occasionally capture the ventricles through the normal system (capture beat) or partly (fusion).",['reentry','myo','dissoc','fusion']],
+tdp:["When repolarization reserve is lost (IKr block, low K⁺ or Mg²⁺, bradycardia, congenital defects), the plateau lengthens until L-type Ca²⁺ channels reopen: early afterdepolarizations. Those triggered beats arise in ventricles with large dispersion of repolarization, producing shifting re-entry whose axis rotates around the baseline. A pause lengthens the next QT further, so onset is often pause dependent.",['ead','disp','repol','ikrBlock']],
+vf:["Many independent wavelets of re-entry fragment ventricular activation; no organized depolarization or pumping remains. Ischemia, scar and electrolyte disorders shorten the wavelength (conduction velocity × refractory period), so the ventricles can hold many circuits at once.",['reentry','supply']],
+aivr:["An ectopic ventricular focus with enhanced automaticity (often reperfused myocardium) fires at 60–100, just faster than the sinus node, and takes over. The QRS is wide because activation runs muscle to muscle; where the two rates cross, fusion beats appear.",['auto','myo','fusion','reperf']],
+avb1:["AV-nodal cells depolarize with slow, Ca²⁺-dependent upstrokes; vagal tone, nodal blockers, fibrosis or inferior ischemia slow them further. Every impulse still gets through, just later: a long PR with no dropped beats.",['decrem','autonom']],
+wenck:["Nodal tissue recovers slowly after each beat, so each successive impulse arrives earlier in its recovery and conducts more slowly (decremental conduction): the PR lengthens until one impulse fails. The pause lets the node recover and the cycle restarts. The biggest PR increment is the first, so R–R intervals shorten before the drop.",['decrem','refract']],
+mob2:["His–Purkinje tissue depolarizes with fast Na⁺-dependent upstrokes: it conducts at full speed or not at all. When it is diseased, impulses fail suddenly with no PR warning. A coexisting bundle-branch block confirms the disease is below the node.",['allnone','bbb']],
+avb21:["With every other P blocked there is never a chance to see whether the PR lengthens before a drop. The site may be nodal (decremental, often long PR, narrow QRS) or infranodal (all-or-none, normal PR, wide QRS); QRS width and the response to atropine or exercise localize it.",['decrem','allnone']],
+avb3:["No atrial impulse reaches the ventricles; the sinus node keeps its own rate and a pacemaker below the block escapes. A narrow escape at 40–60 means the block is in the node; a wide escape at 20–40 means it is below the His bundle, and that escape is less reliable.",['dissoc','auto','allnone']],
+rbbb:["With the right bundle blocked, the septum and left ventricle activate normally first, so the start of the QRS is unchanged. The right ventricle then activates late through muscle; that late rightward, anterior force adds R′ in V1 and a wide S in I and V6. The ST and T point opposite it (secondary change).",['bbb','myo','secST','seq']],
+lbbb:["With the left bundle blocked, the septum activates right to left (the septal q in I and V6 disappears) and the large left ventricle is activated slowly through muscle from the right. The dominant force points leftward and posterior for a long time: broad R in I and V6, QS in V1. Repolarization follows the reversed sequence, so ST and T are discordant.",['bbb','myo','secST','seq']],
+lafb:["The anterior fascicle normally activates the anterosuperior LV early. When blocked, activation starts inferiorly through the posterior fascicle (q in I and aVL, r in II, III, aVF) and finishes superiorly and laterally, pulling the axis to −45° or beyond.",['fasc','seq']],
+lpfb:["With the posterior fascicle blocked, the LV activates first through the anterior fascicle (superiorly) and finishes in the inferoposterior wall: the axis swings right, with rS in I and qR in III. RVH and lateral infarction do the same, so it is a diagnosis of exclusion.",['fasc','seq']],
+bifasc:["The right bundle and anterior fascicle are both blocked, leaving the posterior fascicle alone. The QRS combines a late rightward force (RBBB) with superior-left terminal activation (LAFB). Everything now rides on one fascicle, so intermittent failure means complete heart block.",['bbb','fasc','allnone']],
+wpw:["An accessory pathway of ordinary muscle connects atrium and ventricle without AV-nodal delay: ventricular activation starts early (short PR) and spreads slowly muscle to muscle (the slurred delta wave). The rest of the ventricle is activated normally, so the QRS is a fusion of both. The delta wave points away from the pathway’s location.",['accpath','fusion','myo']],
+vpace:["The RV apical lead depolarizes the ventricle from its tip; activation spreads muscle to muscle upward and leftward: wide, LBBB-like QRS with a superior axis. Repolarization follows the abnormal sequence, so ST and T are discordant.",['paced','myo','secST']],
+fcap:["A stimulus captures only if it exceeds the threshold of the tissue touching the electrode. Lead dislodgement, fibrosis at the tip, hyperkalemia, acidosis or drugs raise the threshold or reduce the delivered current: a spike with no depolarization.",['paced','restK']],
+antstemi:["Proximal LAD occlusion makes the anterior wall, septum and high lateral wall transmurally ischemic. Ischemic cells lose K⁺ and open K-ATP channels, so they sit partly depolarized with shortened action potentials. The voltage difference with healthy tissue drives an injury current toward the epicardium: V1–V4, I and aVL show ST elevation and the inferior leads the reciprocal.",['injury','territory','recip','necrosis']],
+infstemi:["RCA (or dominant circumflex) occlusion injures the inferior wall; the injury vector points down toward II, III and aVF and, with the RCA, slightly rightward, so III exceeds II and aVL shows the mirror image. The RCA usually supplies the AV node, hence the associated AV block.",['injury','territory','recip']],
+latstemi:["Circumflex or diagonal occlusion injures the lateral wall; the vector points left and superior toward I, aVL, V5 and V6, with reciprocal depression in III and aVF. The lateral wall is electrically quiet on the standard 12-lead, so the elevations are often small.",['injury','territory','recip']],
+poststemi:["No standard lead faces the posterior (inferolateral basal) wall. Its injury vector points backward, away from V1–V3, so those leads show the mirror image: ST depression, a tall R (the lost posterior forces) and an upright T. V7–V9 show the elevation directly.",['recip','injury','territory','necrosis']],
+dewinter:["In some proximal LAD occlusions the injury current is directed toward the endocardium early in the ST: upsloping J-point depression, followed by tall, symmetric hyperacute T waves. It is an occlusion equivalent despite the absent ST elevation.",['hyperacute','injury','territory']],
+wellens:["A critical LAD lesion that occluded and then reopened: the stunned anterior wall repolarizes late, so the T vector turns away from V2–V3 and inverts while the pain has resolved. The artery is primed to re-occlude, which is why stress testing is dangerous.",['reperf','territory','supply']],
+avr:["Left-main or three-vessel disease, or a severe supply–demand mismatch, makes the subendocardium ischemic in every wall. Those injury currents point toward the cavity, and their sum points toward the right shoulder: diffuse ST depression with reciprocal elevation in aVR (and often V1).",['supply','recip','territory']],
+sgarb:["LBBB normally deviates the ST opposite the QRS (secondary change). An acute injury current adds a primary vector; when the ST moves the same way as the QRS, or is out of proportion to it, the secondary explanation fails and occlusion is likely.",['secST','injury','bbb']],
+oldimi:["Infarcted myocardium becomes scar that produces no current. A lead over the scar looks through an electrical window at the opposite wall depolarizing away: a pathologic Q. The injury current has resolved, so the ST is back at baseline.",['necrosis','territory']],
+lvan:["A thin, dyskinetic scar bulges outward in systole; stretch and the scar border keep an injury-like current flowing, so ST elevation persists for weeks with QS waves and small T waves. The scar edge is a substrate for re-entrant VT.",['necrosis','injury','reentry']],
+lvh:["A thicker LV wall generates larger depolarization forces (tall R in V5–V6, deep S in V1–V2) and takes longer to activate. Its subendocardium repolarizes later and is relatively underperfused, so repolarization reverses: asymmetric ST depression and T inversion opposite the tall R.",['mass','strain','supply']],
+rvh:["A pressure-loaded, hypertrophied RV produces anterior and rightward forces that outweigh the left: dominant R in V1, right axis, deep S in V6. Its delayed repolarization inverts the right precordial T waves, and right atrial enlargement adds tall P waves.",['rvload','mass','strain','atrial']],
+hcm:["A hypertrophied, disarrayed septum produces large septal depolarization forces; the normal left-to-right septal vector is exaggerated into deep, narrow Q waves in the lateral and inferior leads. Voltage is high from the extra mass, and disarray with fibrosis is the substrate for VT.",['mass','seq','genetic']],
+pe:["Sudden pulmonary obstruction raises RV pressure: the RV dilates, activates late (S in I, incomplete RBBB) and rotates clockwise. RV wall stress and ischemia invert the right precordial T waves; sympathetic drive causes tachycardia. S1Q3T3 is the rightward-rotated vector.",['rvload','strain','autonom']],
+effusion:["Fluid around the heart insulates it from the electrodes (low voltage) and lets it swing within the sac every other beat, alternating its orientation to the leads (electrical alternans). Compensatory sympathetic drive raises the rate.",['insul','position','autonom']],
+dextro:["The heart is a mirror image in the right chest: atrial activation runs left to right, so lead I shows inverted P, QRS and T and aVR is upright, while the left precordial electrodes sit progressively farther from the heart and the R waves shrink across V1–V6.",['position','seq']],
+hyperk:["Rising extracellular K⁺ partly depolarizes resting cells, inactivating fast Na⁺ channels: phase 0 slows, PR and QRS widen, and atrial muscle (the most sensitive) loses its P wave. Extracellular K⁺ also increases IKr conductance, speeding phase 3: narrow, peaked T waves.",['restK','naAvail','repol']],
+hyperk2:["With K⁺ high enough, most Na⁺ channels are inactivated and conduction becomes extremely slow; depolarization and repolarization overlap until QRS and T merge into one sinusoid, the step before VF or asystole.",['restK','naAvail','myo']],
+hypok:["Low extracellular K⁺ reduces IKr and IK1 conductance, slowing and delaying phase 3: flat T waves, ST depression and a prominent U wave from late-repolarizing layers. Unstable repolarization generates ectopy.",['restK','repol','ead']],
+hyperca:["High extracellular Ca²⁺ speeds Ca²⁺-dependent inactivation of L-type channels and shortens phase 2: the ST shortens or vanishes and the T starts straight off the QRS.",['plateau']],
+hypoca:["Low extracellular Ca²⁺ slows L-type channel inactivation, so the plateau lengthens: a long, flat ST. Phase 3 is unchanged, so the T wave has a normal shape, only later.",['plateau']],
+lqt:["Reduced outward K⁺ current (IKr or IKs) or extra late inward current prolongs repolarization and the QT. Layers prolong unequally, raising dispersion, and early afterdepolarizations can trigger torsades. The T shape hints at the channel: broad-based with IKs loss, low and notched with IKr loss.",['repol','ikrBlock','ead','genetic']],
+dig:["Digoxin inhibits the Na⁺/K⁺-ATPase: intracellular Na⁺ rises, Ca²⁺ extrusion falls, and cell Ca²⁺ rises. Shorter action potentials shorten the QT and scoop the ST downward; added vagal tone slows the AV node.",['digoxin','plateau','autonom']],
+tca:["Tricyclics block fast Na⁺ channels in a rate-dependent way; phase 0 slows most in the right bundle and RV, widening the QRS with a late rightward force (tall terminal R in aVR, deep S in I). Anticholinergic tachycardia worsens the use-dependent block.",['naBlock','naAvail','autonom']],
+hypothermia:["Cold slows every ion channel: phase 4 and conduction slow (bradycardia, long PR, wider QRS) and repolarization lengthens (long QT). The Ito-driven epicardial notch grows much larger than the endocardial one, producing the positive J (Osborn) wave. Shivering adds muscle artifact.",['temp','ito','repol']],
+peric:["Inflamed epicardium (the pericardium itself is electrically silent) creates a diffuse injury current with no territory: ST elevation in most leads, reciprocal depression only in aVR and V1. Atrial epicardial injury shifts the PR segment down (up in aVR).",['inflam','injury']],
+brugada:["Reduced Na⁺ current or a strong Ito in RV outflow-tract epicardium makes that epicardium lose its action-potential dome while endocardium keeps it. The transmural gradient produces coved ST elevation, delayed epicardial repolarization inverts the T, and phase 2 re-entry can trigger VF. Fever, Na⁺-channel blockers and vagal tone enhance it.",['ito','naAvail','genetic','disp']],
+lrrev:["Swapping the two arm electrodes mirrors lead I (P, QRS and T inverted), swaps aVR with aVL and II with III, and leaves aVF alone. The precordial leads use the Wilson terminal, the average of all three limbs, so they stay normal.",['position']],
+artifact:["Movement changes the electrode–skin potential and impedance, so the recorded voltage is not from the heart. Leads that share the moving electrode carry it; leads that do not use it remain clean and show native QRS complexes marching on time.",['artifact','position']],
+hyperT:["Within minutes of occlusion, ischemic myocytes leak K⁺ (raising local extracellular K⁺) and open K-ATP channels, shortening their action potentials. The steeper repolarization gradient enlarges and broadens the T over the territory before the injury current is strong enough to lift the ST.",['hyperacute','territory','restK']],
+saflag:["The first diagonal supplies the high lateral wall; its injury vector points up and left, toward I and aVL. V2 lies over the anterolateral base and picks it up, while lead III, looking from below and to the right, records the mirror image.",['territory','injury','recip']],
+swirl:["The first septal perforator supplies the basal septum. A septal injury vector points rightward, anterior and superior, toward V1 and aVR; V5–V6 and the inferior leads view it from behind and show reciprocal depression.",['territory','injury','recip']],
+aslanger:["Two currents add: a small inferior injury vector from the culprit and a diffuse subendocardial vector pointing toward aVR, away from V4–V6. Only lead III, the most rightward-inferior lead, ends up above baseline; the lateral leads show the subendocardial depression.",['injury','supply','recip']],
+rvmi:["Occlusion before the RV marginal branch injures the RV free wall as well as the inferior LV. The RV injury vector points rightward and anterior, toward V1 and V4R; added to the inferior vector it shifts the sum rightward, so III exceeds II. The injured RV needs preload to fill.",['territory','injury','recip']],
+stemirbbb:["RBBB delays only the end of ventricular activation; the ST still reports the injury current faithfully. The proximal LAD supplies the right bundle through septal perforators, so one occlusion both blocks the bundle and injures the anterior wall.",['injury','bbb','territory','secST']],
+shark:["A very large transmural injury current lifts the ST so far and so early that it begins before the QRS has returned to baseline; QRS, ST and T fuse into one monophasic triangle. Its size reflects the size of the ischemic territory.",['injury','territory','recip']],
+antsubtle:["The injury current opposes the last part of anterior depolarization, so the S wave in V2–V3 shrinks or vanishes as the ST rises (terminal QRS distortion). A small ST shift with a missing S is already a large injury relative to the QRS.",['injury','hyperacute','territory']],
+wraplad:["A long LAD continues around the apex to supply the inferior apical segments. The summed injury vector points anterior and inferior; no injured wall points away from the inferior leads, so their usual reciprocal depression disappears.",['territory','injury','recip']],
+pacedmi:["Pacing makes discordant ST-T the expected secondary change. An acute injury current adds a primary vector; wherever the ST then moves the same way as the QRS, the secondary explanation is impossible.",['secST','injury','paced']],
+svtab:["At fast rates one bundle (usually the right, with the longer refractory period) is still refractory when the next impulse arrives, so its ventricle activates late through muscle: a functional bundle-branch block. The initial activation still uses the normal system, so the shape is textbook.",['refract','bbb','reentry']],
+preaf:["The accessory pathway has no decremental conduction and a short refractory period, so it can pass atrial impulses at 250–300 a minute. Each beat is a different fusion of pathway and AV-nodal activation, so width varies. Blocking the AV node removes the competing normal fronts and sends more impulses down the pathway.",['accpath','decrem','fusion']],
+antidromic:["The loop runs down the accessory pathway, so the ventricles are activated entirely from its insertion, muscle to muscle (maximal pre-excitation), and back up the His–Purkinje system and AV node.",['accpath','reentry','myo']],
+fascvt:["A re-entry circuit within the left posterior Purkinje network exits near the inferoposterior septum. Because it uses the conduction system, the QRS is only moderately wide; activation spreads superiorly and anteriorly from the exit: superior axis with an RBBB-like V1. Slow, Ca²⁺-dependent (verapamil-sensitive) tissue forms part of the loop.",['reentry','fasc','seq']],
+rvotvt:["Catecholamines raise cAMP and Ca²⁺ loading in outflow-tract cells, causing delayed afterdepolarizations. The exit high in the anterior RV sends activation downward and leftward: inferior axis with an LBBB-like V1.",['dad','seq','autonom']],
+bidir:["Ca²⁺-overloaded Purkinje cells (digoxin toxicity, ryanodine-receptor mutations) produce delayed afterdepolarizations. Two foci, often in opposite fascicles, alternate firing, so the axis swings back and forth every beat.",['dad','digoxin','fasc','genetic']],
+pmvt:["Acute ischemia shortens and fragments refractoriness in the injured zone and slows conduction; a premature beat finds unidirectional block and re-enters along a constantly shifting path, so the QRS keeps changing. The QT stays normal because afterdepolarizations are not the driver.",['reentry','supply','injury']],
+vflutter:["One very rapid ventricular re-entry circuit activates the ventricles so fast that depolarization and repolarization merge into a continuous sine wave.",['reentry']],
+atypflut:["The same tricuspid circuit run in the opposite direction (down the septum, up the lateral wall), or a circuit around atrial scar. Reversing the wavefront relative to each lead reverses the polarity of the F waves.",['reentry','seq']],
+eat:["One atrial focus outside the sinus node, with enhanced automaticity, fires faster than the sinus node and warms up gradually. Its location sets the P axis: a left atrial focus gives negative P in I and aVL; a low atrial focus inverts the inferior P.",['auto','seq','dad']],
+atblock:["Digoxin raises intracellular Ca²⁺, so atrial cells fire triggered (DAD) beats at 150–250 a minute, while its vagal effect slows the AV node and blocks every other impulse.",['dad','digoxin','decrem']],
+wap:["High vagal tone slows the sinus node to the rate of other atrial and junctional pacemakers, so leadership passes between them, each with its own P shape and PR.",['auto','autonom']],
+orthoavrt:["The loop runs down the AV node (narrow QRS) and back up the accessory pathway. The ventricles must depolarize before the pathway can carry the impulse back, so the retrograde P lands a fixed time after the QRS, in the ST segment.",['reentry','accpath','decrem']],
+pjrt:["A slowly conducting, decremental accessory pathway (usually posteroseptal) carries the impulse back to the atria so slowly that the P appears late, close to the next QRS (long RP), inverted inferiorly because the atria activate from below.",['reentry','accpath','decrem']],
+accjunct:["Junctional cells with enhanced automaticity (digoxin, catecholamines, ischemia, inflammation) fire at 60–100, faster than their escape rate, and outpace the sinus node; the atria are activated retrogradely.",['auto','dad','seq']],
+sinusarrest:["The sinus node stops generating impulses (vagal surge, drugs, ischemia, fibrosis, hyperkalemia). With no atrial depolarization nothing happens until a lower pacemaker escapes or the node recovers, so the pause length is arbitrary.",['auto','autonom']],
+saexit:["The sinus node keeps firing on time, but perinodal tissue fails to carry some impulses to the atrium. Because the clock never stops, the pause is an exact multiple of the P–P interval.",['auto','allnone']],
+hgavb:["Advanced His–Purkinje (or nodal) disease fails repeatedly; when an impulse does conduct it keeps its usual PR, the signature of all-or-none infranodal block. The ventricular rate is too slow to sustain output.",['allnone','auto']],
+isodiss:["Sinus and junctional pacemakers fire at nearly the same rate (the sinus slowed by vagal tone or drugs). Atria follow one clock and ventricles the other, so P waves drift past the QRS. Conduction itself is intact.",['dissoc','auto','autonom']],
+ashman:["Refractoriness tracks the previous cycle length. After a long R–R the right bundle’s refractory period lengthens; a short coupling interval then finds it still refractory, and that beat conducts with an RBBB shape.",['refract','bbb']],
+altbbb:["Both bundles are diseased; whichever fails on a given beat sets the QRS shape. If both fail on the same beat, nothing conducts.",['bbb','allnone']],
+ivcd:["Diffuse fibrosis, dilatation or drugs slow conduction throughout the ventricular muscle rather than in one bundle, so the whole QRS is prolonged and slurred without a single late region.",['myo','naAvail']],
+aai:["An atrial electrode depolarizes the atrium; activation then follows the native AV node and His–Purkinje system, so the QRS is normal.",['paced','seq']],
+crt:["Pacing the RV and the LV lateral wall together creates two wavefronts that collide, shortening total activation. The early LV free-wall wave travels rightward and anterior, toward V1 and away from lead I.",['paced','fusion','seq']],
+undersense:["The sensing circuit misses native depolarizations (small signal, lead dislodged), so the device fires on its own timer. Stimuli landing in refractory tissue do nothing; those arriving after repolarization capture, and one landing in the vulnerable period can trigger VF.",['paced','refract']],
+oversense:["The device interprets non-cardiac signals (pectoral myopotentials, lead-fracture noise) as ventricular events and resets its timer, withholding pacing; a dependent patient has nothing to replace it.",['paced','artifact']],
+pmt:["A ventricular beat conducts back up the AV node; the atrial lead senses that retrograde P and, after the programmed AV delay, paces the ventricle, which conducts back again: a device-mediated loop at the upper tracking rate.",['paced','reentry','decrem']],
+tcp:["External current depolarizes the myocardium only above threshold; below it the monitor shows just the stimulus artifact. Captured beats spread from the chest wall through muscle: wide QRS, discordant T.",['paced','myo','artifact']],
+takotsubo:["A catecholamine surge overloads apical myocytes, where beta-receptors are densest, with Ca²⁺: transient stunning, apical ballooning and a repolarization delay that ignores coronary territories. The T inversion and long QT reflect diffuse repolarization delay, not occlusion.",['catechol','repol','disp']],
+arvc:["Desmosomal gene defects let RV myocytes detach and be replaced by fat and fibrous tissue. Surviving muscle islands activate late (the epsilon wave, prolonged terminal activation), and the patchy scar supports re-entrant VT exiting from the RV (LBBB shape).",['genetic','myo','reentry']],
+brugada2:["The same outflow-tract epicardial Ito/INa imbalance as type 1, but the epicardial dome survives and repolarizes before the endocardium: the ST falls from a high J point, dips, then rises into a positive T. Fever (which speeds Na⁺-channel inactivation) or Na⁺-channel blockers can push it to the coved type.",['ito','naAvail','genetic','temp']],
+shortqt:["Gain-of-function K⁺ channels (IKr, IKs, IK1) speed phase 3 so much that the plateau barely exists: the T starts right after the QRS, tall and peaked. Short refractoriness shortens the re-entry wavelength in atria and ventricles.",['repol','genetic','reentry']],
+lqt3:["Mutant Na⁺ channels fail to stay inactivated, leaving a small inward current through the plateau and lengthening it: a long, flat ST. Once phase 3 starts it runs normally, giving a late, narrow T. Slow rates exaggerate it.",['plateau','genetic','naAvail','ead']],
+apicalhcm:["Hypertrophy confined to the apex adds large forces toward V3–V5 and markedly delays apical subendocardial repolarization, reversing the T vector there: giant negative T waves.",['mass','strain','genetic']],
+amyloid:["Amyloid fibrils thicken the walls but replace and separate myocytes, so fewer cells generate current: low voltage despite thick walls. Infiltrated conduction tissue causes AV block, and loss of anterior forces creates pseudo-infarct Q waves.",['insul','mass','necrosis']],
+asd:["A left-to-right shunt volume-loads the RV; its dilated outflow tract activates last, adding a small late rightward-anterior force (rSr′ in V1). Notching of the inferior R waves reflects delayed activation around the dilated chamber.",['rvload','seq','atrial']],
+copd:["Hyperinflated lungs, a poor conductor, lie between heart and electrodes and lower the voltage; the flattened diaphragm pulls the heart down and vertical (right axis, weak anterior forces). Pulmonary hypertension enlarges the right atrium (tall P in II).",['insul','position','rvload','atrial']],
+cerebralT:["Intracranial bleeding or pressure triggers massive sympathetic discharge from the insula and hypothalamus; catecholamines injure myocytes and delay repolarization diffusely: giant inverted T, very long QT. Autonomic reflexes add bradycardia.",['catechol','repol','autonom']],
+athlete:["Endurance training raises vagal tone (slow sinus rate, slow AV-node conduction) and adds myocardial mass (higher voltage); the slow rate exaggerates the epicardial Ito notch of early repolarization.",['autonom','mass','ito']],
+child:["Before birth the RV pumps against systemic resistance and starts as thick as the LV: rightward axis and a tall R in V1. The RV regresses through childhood; until then its repolarization keeps the right precordial T waves inverted.",['rvload','mass','seq']],
+hyperk1:["A modest rise in extracellular K⁺ increases IKr conductance, so phase 3 repolarization is faster and more synchronized: the T becomes narrow-based and tall. The resting potential has barely moved, so phase 0 and conduction are still normal.",['restK','repol']],
+hyperk3:["At high K⁺ the resting potential sits in the inactivation range of fast Na⁺ channels: atrial muscle stops conducting (no P), though specialized tracts can still carry sinus impulses to the AV node. Ventricular conduction is so slow that the QRS is very wide.",['restK','naAvail','myo']],
+brash:["AV-nodal blockers and hyperkalemia each slow sinus and nodal function, and together their effects multiply. Bradycardia lowers renal perfusion, failing kidneys raise K⁺ and drug levels, and the cycle tightens.",['restK','decrem','auto']],
+hypok2:["Severe hypokalemia cuts IK1 and IKr: phase 3 is slow and late, so the T shrinks while late-repolarizing layers (the U wave) grow. Lost repolarization reserve allows early afterdepolarizations and triggered PVCs.",['restK','repol','ead']],
+hypomg:["Magnesium feeds the Na⁺/K⁺-ATPase and modulates Ca²⁺ and K⁺ channels. Deficiency lowers intracellular K⁺, prolongs repolarization and permits early afterdepolarizations; a PVC landing on the T can start torsades.",['mg','ead','repol']],
+renal:["Two electrolytes, two phases: high K⁺ speeds phase 3 (a narrow, peaked T) while low Ca²⁺ prolongs phase 2 (a long ST). Hypertension adds LV mass.",['restK','plateau','mass']],
+digtox:["Toxic digoxin raises intracellular Ca²⁺ and boosts vagal tone. The AV node blocks completely while Ca²⁺-loaded junctional cells fire by triggered automaticity, so a regular junctional rhythm runs beneath the fibrillating atria.",['digoxin','dad','decrem','dissoc']],
+flec:["Class IC drugs bind Na⁺ channels and release slowly, so block accumulates beat by beat (use dependence). Slower phase 0 lengthens every conduction interval (PR, QRS) and unmasks a Brugada-like outflow-tract pattern.",['naBlock','naAvail','refract']],
+v1v2high:["Moving V1–V2 up to the second intercostal space puts them above the ventricles, looking down on the atria and outflow tract: atrial activation moves away (negative P) and late outflow-tract activation adds an r′.",['position','seq']],
+lallrev:["Swapping the LA and LL electrodes exchanges leads I and II, inverts III and swaps aVL with aVF. The precordial leads are unchanged because the Wilson terminal still averages the same three electrodes.",['position']],
+rarl:["With the right-arm cable on the right leg, lead II records between two leg electrodes at almost the same potential, so it is nearly flat; the ground now sits on the arm, distorting the other limb leads.",['position']],
+cpr:["Each compression moves the electrodes and changes chest impedance, adding large, regular voltage at the compression rate. Only when compressions stop does the heart’s own signal appear.",['artifact']],
+tremor:["Rhythmic muscle contraction at 4–6 Hz under one limb electrode adds a regular oscillation to every lead that uses that electrode; leads that do not use it stay clean.",['artifact','position']],
+vswap:["Each precordial electrode views the heart from its own direction; swapping two cables swaps those views and breaks the gradual rotation of the QRS across the chest.",['position','seq']]};
+P.forEach(p=>{const m=MECH[p.id];if(m){p.mech=m[0];p.con=m[1]}else{p.mech='';p.con=[]}});
+PM.hyperk.name='Hyperkalemia, moderate: flat P, long PR, wide QRS';PM.hyperk2.name='Hyperkalemia, extreme: sine wave';PM.hypok.name='Hypokalemia, moderate';
+[['hyperk','hyperk1'],['hyperk','hyperk3'],['hyperk2','hyperk3'],['hypok','hypok2'],['lqt','lqt3'],['brugada','brugada2'],['infstemi','rvmi'],['antstemi','hyperT'],['flutter','atypflut'],['wpw','preaf'],['vt','svtab'],['tdp','pmvt'],['dig','digtox'],['tca','flec'],['vpace','pacedmi'],['wellens','takotsubo'],['lvh','athlete'],['erp','antsubtle']].forEach(([a,b])=>{const p=PM[a];if(p&&!p.sim.includes(b))p.sim.push(b)});
+/* concept → patterns index */
+const CIDX={};Object.keys(CON).forEach(k=>CIDX[k]=[]);P.forEach(p=>p.con.forEach(c=>{if(CIDX[c])CIDX[c].push(p.id)}));
+
 /* ============ record pipeline ============ */
 function computeMeta(R){const q=R.ev.q.filter(x=>x.t>=0&&x.t<DUR&&x.k!=='s').map(x=>x.t).sort((a,b)=>a-b),M=R.meta;
   M.hr=q.length>1?Math.round(60*(q.length-1)/(q[q.length-1]-q[0])):null;const rr=M.hr?60/M.hr:null;
@@ -1048,7 +1730,7 @@ function Viewer(host,opt={}){
   wrap.addEventListener('change',e=>{const c=e.target,k=c.dataset.k;if(!k)return;self.v[k]=c.type==='checkbox'?c.checked:(['fmt','filt','strip'].includes(k)?c.value:+c.value);self.draw()});
   const rb=$('[data-k=reset]',wrap);if(rb)rb.addEventListener('click',()=>{self.v={...DEFV,...(opt.v||{})};sync();self.meas=null;read.innerHTML='&nbsp;';self.draw()});
   const cb=$('[data-k=cal]',wrap);if(cb)cb.addEventListener('click',()=>{self.cal=!self.cal;cb.setAttribute('aria-pressed',String(self.cal));cv.style.touchAction=self.cal?'none':'pan-x pan-y'});
-  self.setRec=rec=>{self.rec=rec;self.meas=null;read.innerHTML='&nbsp;';sync();self.draw()};
+  self.setRec=rec=>{self.rec=rec;self.meas=null;read.innerHTML='&nbsp;';if(rec.opt&&rec.opt.strip){self.v.strip=rec.opt.strip;self._as=1}else if(self._as){self.v.strip=(opt.v&&opt.v.strip)||DEFV.strip;self._as=0}sync();self.draw()};
   self.setAnn=b=>{self.ann=b;self.draw()};
   self.setOverlay=f=>{self.overlay=f;self.draw()};
   self.draw=()=>{if(!self.rec)return;const rec=self.rec,v=self.v,D=leadData(rec,v),C=cssv(),dpr=window.devicePixelRatio||1;
@@ -1109,8 +1791,8 @@ function Viewer(host,opt={}){
 
 /* ============ storage ============ */
 const KEY='ecgrr.v1';
-const store={load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.answers)){s.meas=s.meas||[];s.q2=s.q2||[];s.exams=s.exams||[];return s}}catch(_){}return{answers:[],meas:[],q2:[],exams:[],best:0}},
-  save(s){try{s.answers=s.answers.slice(-800);s.meas=s.meas.slice(-500);s.q2=s.q2.slice(-300);localStorage.setItem(KEY,JSON.stringify(s))}catch(_){}}};
+const store={load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.answers)){s.meas=s.meas||[];s.q2=s.q2||[];s.exams=s.exams||[];s.mech=s.mech||[];s.path=s.path||{};s.traj=s.traj||[];return s}}catch(_){}return{answers:[],meas:[],q2:[],exams:[],mech:[],path:{},traj:[],best:0}},
+  save(s){try{s.answers=s.answers.slice(-800);s.meas=s.meas.slice(-500);s.q2=s.q2.slice(-300);s.mech=(s.mech||[]).slice(-800);s.traj=(s.traj||[]).slice(-500);localStorage.setItem(KEY,JSON.stringify(s))}catch(_){}}};
 let DB=store.load();
 function patStats(){const o={};P.forEach(p=>o[p.id]={n:0,ok:0});DB.answers.forEach(a=>{const s=o[a.pid];if(s){s.n++;if(a.ok)s.ok++}});return o}
 
@@ -1138,6 +1820,25 @@ function makeMeas(R,type,r){const M=R.meta;let q,opts,a,why;const rr=M.hr?60000/
   else{opts=['Short (under 360 ms)','Normal (360–449 ms)','Borderline to prolonged (450–499 ms)','Markedly prolonged (500 ms or more)'];const v=M.qtcB;a=v<360?0:v<450?1:v<500?2:3;q='What is the corrected QT (QTc)?';why=`QT about ${M.qt} ms at a rate of ${M.hr}/min (R–R ${Math.round(rr)} ms). Bazett QTc ≈ ${M.qtcB} ms; Fridericia ≈ ${M.qtcF} ms. Quick check: a QT longer than half the R–R interval is usually prolonged.`}
   return{type,q,opts,a,why}}
 
+/* ============ mechanism & integration questions ============ */
+const lc=t=>/^[A-Z][A-Z0-9]/.test(t)?t:t.charAt(0).toLowerCase()+t.slice(1);
+const firstS=t=>{const m=t.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():t};
+function conChips(ids){const l=(ids||[]).filter(c=>CON[c]);if(!l.length)return'';return`<div class="conwrap stack" style="gap:8px"><div class="row" style="gap:6px">${l.map(c=>`<button class="chip con" type="button" data-con="${c}" aria-pressed="false"><span class="dot ${CON[c].d}"></span>${CON[c].n}</button>`).join('')}</div><div class="conbox" hidden></div></div>`}
+function conPanel(c,from){const k=CON[c],mates=CIDX[c].filter(x=>x!==from);return`<div class="note stack" style="gap:8px"><div><span class="lbl">${DOM[k.d]}</span><div style="margin-top:2px"><b>${k.n}.</b> ${k.s}</div></div>${mates.length?`<div><span class="lbl">Same mechanism, different tracing</span><div class="row" style="gap:6px;margin-top:4px">${mates.map(x=>`<button class="chip" type="button" data-pat="${x}">${PM[x].name}</button>`).join('')}</div></div>`:''}${k.lab?`<div><button class="btn small" type="button" data-lab="${k.lab}">See it in the ${{ap:'action potential',cond:'conduction',cor:'coronary'}[k.lab]} lab</button></div>`:''}</div>`}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-con]');if(b){const w=b.closest('.conwrap'),box=w&&$('.conbox',w);if(!box)return;const on=b.getAttribute('aria-pressed')!=='true';$$('[data-con]',w).forEach(x=>x.setAttribute('aria-pressed','false'));if(on){b.setAttribute('aria-pressed','true');box.innerHTML=conPanel(b.dataset.con,w.dataset.from||'');box.hidden=false}else box.hidden=true;return}
+  const pb=e.target.closest('[data-pat]');if(pb){openAtlas(pb.dataset.pat);return}const lb=e.target.closest('[data-lab]');if(lb){openLab(lb.dataset.lab)}});
+function makeMech(R,r,type){const p=PM[R.pid],cs=p.con.filter(c=>CON[c]);if(!cs.length)return null;const linkable=cs.filter(c=>CIDX[c].length>1);
+  type=type||(linkable.length&&r.u()<.45?'link':'why');if(type==='link'&&!linkable.length)type='why';const hide=S.diff==='hard';
+  if(type==='why'){const c=cs[0],avoid=new Set(cs),cand=[];(p.sim||[]).forEach(x=>{const q=PM[x];if(q&&q.con[0])cand.push(q.con[0])});
+    shuffle(Object.keys(CON).filter(k=>CON[k].d===CON[c].d),r).forEach(k=>cand.push(k));shuffle(Object.keys(CON),r).forEach(k=>cand.push(k));
+    const d=[];for(const k of cand){if(!avoid.has(k)&&!d.includes(k))d.push(k);if(d.length===3)break}const ids=shuffle([c,...d],r);
+    return{type:'why',c,ids,q:hide?'Which mechanism best explains this tracing?':`Tracing: ${p.name}. Which mechanism best explains what you see (${lc(p.feats[0])})?`,opts:ids.map(k=>CON[k].s),short:ids.map(k=>CON[k].n),a:ids.indexOf(c),
+      why:p.mech,extra:d.map(k=>{const ex=CIDX[k].filter(x=>x!==p.id);return`<li><b>${CON[k].n}</b>${ex.length?` drives ${ex.slice(0,2).map(x=>lc(PM[x].name)).join(' and ')}`:''}.</li>`}).join('')}}
+  const c=linkable[Math.floor(r.u()*linkable.length)],mates=CIDX[c].filter(x=>x!==p.id),other=mates.filter(x=>PM[x].cat!==p.cat),pl=other.length?other:mates,ans=pl[Math.floor(r.u()*pl.length)];
+  const not=x=>x!==p.id&&!PM[x].con.includes(c),d=[...new Set([...shuffle((p.sim||[]).filter(not),r),...shuffle(P.map(x=>x.id).filter(not),r)])].slice(0,3),ids=shuffle([ans,...d],r);
+  return{type:'link',c,ids,q:`${hide?'':`Tracing: ${p.name}. `}Which of these runs on the same core mechanism, <i>${lc(CON[c].n)}</i>?`,opts:ids.map(x=>PM[x].name),short:ids.map(x=>PM[x].name),a:ids.indexOf(ans),
+    why:`<b>${PM[ans].name}.</b> ${PM[ans].mech}`,extra:`<li><b>Shared mechanism: ${CON[c].n}.</b> ${CON[c].s}</li>`+d.map(x=>{const k=PM[x].con[0];return`<li><b>${PM[x].name}</b>${k&&CON[k]?` runs mainly on ${lc(CON[k].n)}`:''}${(p.sim||[]).includes(x)?' (a look-alike with a different mechanism)':''}.</li>`}).join('')}}
+
 /* ============ quiz ============ */
 const S={mode:'practice',qt:'dx',diff:'standard',cats:Object.fromEntries(Object.keys(CAT).map(k=>[k,1])),drill:null,q:null,exam:null,streak:0,seen:[]};
 const qViewer=Viewer($('#qViewer')),aViewer=Viewer($('#aViewer'));
@@ -1152,12 +1853,13 @@ function options(pid,r){const p=PM[pid],all=P.map(x=>x.id).filter(x=>x!==pid),sa
   d=[...new Set(d)].slice(0,3);return shuffle([pid,...d],r)}
 function newQ(pid,kind,seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+3),rec=generate(pid,seed);
   if(kind==='meas'){const ts=measOptions(rec,r);if(ts.length){const t=ts[Math.floor(r.u()*ts.length)];return{kind,pid,seed,rec,m:makeMeas(rec,t,r),chosen:null,hint:0}}}
+  if(kind==='mech'){const m=makeMech(rec,r);if(m)return{kind,pid,seed,rec,m,chosen:null,hint:0}}
   return{kind:'dx',pid,seed,rec,opts:options(pid,r),chosen:null,hint:0,q2c:null}}
-const kindNow=()=>S.qt==='mix'?(Math.random()<.45?'meas':'dx'):S.qt;
+const kindNow=()=>{if(S.qt!=='mix')return S.qt;const x=Math.random();return x<.42?'dx':x<.7?'meas':'mech'};
 function setStage(){$('#qIntro').hidden=!!S.q||!!S.exam&&S.exam.done;$('#qStage').hidden=!S.q&&!(S.exam&&S.exam.done)}
 function showQ(q){S.q=q;S.seen.push(q.pid);setStage();qViewer.setRec(q.rec);qViewer.setAnn(false);$('#qAnn').checked=false;renderCard()}
 const isOk=q=>q.kind==='dx'?q.chosen===q.pid:q.chosen===q.m.a;
-function recordAnswer(q,mode){const ok=isOk(q);if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
+function recordAnswer(q,mode){const ok=isOk(q);if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else if(q.kind==='mech')DB.mech.push({pid:q.pid,t:q.m.type,c:q.m.c,ok,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
   if(mode==='practice'){S.streak=ok?S.streak+1:0;DB.best=Math.max(DB.best||0,S.streak)}store.save(DB);return ok}
 function startQuiz(){S.streak=0;S.seen=[];if(S.mode==='exam'){const st=patStats(),r=mkRand(Date.now()),pl=pool();let ids=pl.map(p=>({id:p.id,w:(st[p.id].n?1+2*(1-st[p.id].ok/st[p.id].n):2)*r.u()})).sort((a,b)=>b.w-a.w).slice(0,Math.min(15,pl.length)).map(x=>x.id);
     while(ids.length<15)ids.push(pl[Math.floor(r.u()*pl.length)].id);ids=shuffle(ids,r);S.exam={qs:ids.map(id=>newQ(id,kindNow())),i:0,done:false};showQ(S.exam.qs[0])}
@@ -1170,7 +1872,13 @@ function q2Html(q,interactive){const p=PM[q.pid];if(!p.q2)return'';const a=typeo
 function renderCard(){const q=S.q,card=$('#qCard'),p=PM[q.pid],ex=!!S.exam&&!S.exam.done,answered=q.chosen!==null&&!ex;
   $('#qCount').textContent=ex?`Question ${S.exam.i+1} of ${S.exam.qs.length}`:`Practice · streak ${S.streak}`;$('#qProgWrap').hidden=!ex;if(ex)$('#qProg').style.width=(S.exam.i/S.exam.qs.length*100)+'%';$('#qAnn').disabled=ex;
   let h='';
-  if(q.kind==='meas'){const m=q.m;
+  if(q.kind==='mech'){const m=q.m,tag=m.type==='why'?'Mechanism':'Integration';
+    if(!answered){h+=`<div class="row" style="justify-content:space-between"><h2 style="max-width:70ch">${m.q}</h2><span class="pill">${tag}</span></div><div class="qgrid ${m.type==='why'?'long':''}">${m.opts.map((o,i)=>`<button class="opt" data-mi="${i}"><kbd>${i+1}</kbd><span>${o}</span></button>`).join('')}</div>`}
+    else{const ok=isOk(q);h+=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${m.short[m.a]}</span><span class="pill">${tag}</span></div><div class="qgrid ${m.type==='why'?'long':''}">${m.opts.map((o,i)=>`<div class="opt ${i===m.a?'ok':i===q.chosen?'no':''}" style="opacity:${i===m.a||i===q.chosen?1:.55}"><span>${o}</span></div>`).join('')}</div>
+      <div class="two"><div><h3>${m.type==='why'?'Why it looks this way':'The connection'}</h3><p style="margin-top:6px">${m.why}</p></div><div><h3>${m.type==='why'?'Where the other mechanisms show up':'How the options differ'}</h3><ul class="f">${m.extra}</ul></div></div>
+      <div class="conwrap-host" data-from="${q.pid}">${conChips(p.con).replace('class="conwrap stack"',`class="conwrap stack" data-from="${q.pid}"`)}</div><p class="lbl" style="text-transform:none;letter-spacing:0">The tracing shows: <b>${p.name}</b>.</p>
+      <div class="row"><button class="btn primary" id="qNext">Next (N)</button><button class="btn" id="qAtlas">Open in Atlas</button></div>`}}
+  else if(q.kind==='meas'){const m=q.m;
     if(!answered){h+=`<div class="row" style="justify-content:space-between"><h2>${m.q}</h2><span class="pill">${MT[m.type]}</span></div><p class="lbl" style="text-transform:none;letter-spacing:0">Use the calipers: drag across the tracing to read Δt, rate and amplitude.</p><div class="qgrid">${m.opts.map((o,i)=>`<button class="opt" data-mi="${i}"><kbd>${i+1}</kbd><span><b style="font-weight:500">${o}</b></span></button>`).join('')}</div>`}
     else{const ok=isOk(q);h+=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${m.opts[m.a]}</span></div><div class="qgrid">${m.opts.map((o,i)=>`<div class="opt ${i===m.a?'ok':i===q.chosen?'no':''}" style="opacity:${i===m.a||i===q.chosen?1:.55}"><span>${o}</span></div>`).join('')}</div>
       <div class="two"><div><h3>How to get it</h3><p style="margin-top:6px">${m.why}</p></div><div><h3>Measured on this tracing</h3>${measTable(q.rec)}</div></div><p class="lbl" style="text-transform:none;letter-spacing:0">The tracing shows: <b>${p.name}</b>.</p>
@@ -1183,7 +1891,7 @@ function renderCard(){const q=S.q,card=$('#qCard'),p=PM[q.pid],ex=!!S.exam&&!S.e
     h+=`<div class="qgrid">${q.opts.map(id=>`<div class="opt ${id===q.pid?'ok':id===q.chosen?'no':''}" style="opacity:${id===q.pid||id===q.chosen?1:.55}"><span><b style="font-weight:500">${PM[id].name}</b></span></div>`).join('')}</div>`;
     h+=`<div class="two"><div><h3>What to look for</h3><ul class="f">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul></div><div class="stack" style="gap:10px">`;
     if(!ok){const t=(p.vs&&p.vs[q.chosen])||(PM[q.chosen].vs&&PM[q.chosen].vs[q.pid])||`Compare the defining feature of ${PM[q.chosen].name.toLowerCase()} (“${PM[q.chosen].feats[0]}”) with this tracing.`;h+=`<div class="note"><b>Versus ${PM[q.chosen].name}.</b> ${t}</div>`}
-    h+=`<div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div></div></div>${q2Html(q,true)}<details><summary>Measured on this tracing</summary>${measTable(q.rec)}</details>`;
+    h+=`<div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div></div></div>${p.mech?`<div class="stack" style="gap:8px"><h3>Why it looks this way</h3><p style="margin:0">${p.mech}</p>${conChips(p.con).replace('class="conwrap stack"',`class="conwrap stack" data-from="${q.pid}"`)}</div>`:''}${q2Html(q,true)}<details><summary>Measured on this tracing</summary>${measTable(q.rec)}</details>`;
     h+=`<div class="row"><button class="btn primary" id="qNext">Next (N)</button><button class="btn" id="qAtlas">Open in Atlas</button></div>`}
   card.innerHTML=h;
   $$('.opt[data-id]',card).forEach(b=>b.addEventListener('click',()=>choose(b.dataset.id)));$$('.opt[data-mi]',card).forEach(b=>b.addEventListener('click',()=>choose(+b.dataset.mi)));
@@ -1198,7 +1906,7 @@ function next(){if(S.exam&&!S.exam.done)return;showQ(newQ(pickPattern(),kindNow(
 function finishExam(){const e=S.exam,score=e.qs.filter(isOk).length;e.done=true;DB.exams.push({ts:Date.now(),score,n:e.qs.length});store.save(DB);
   S.q=null;setStage();$('#qStage').hidden=false;$('#qViewer').hidden=true;$('#qMeta').hidden=true;
   const c=$('#qCard');c.innerHTML=`<h2>Exam complete: ${score} of ${e.qs.length}</h2><div class="prog"><i style="width:${score/e.qs.length*100}%"></i></div>
-  <div class="tw"><table><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Your answer</th><th></th></tr></thead><tbody>${e.qs.map((q,i)=>{const dx=q.kind==='dx';return`<tr><td>${i+1}</td><td>${dx?'Diagnosis':MT[q.m.type]}</td><td>${dx?PM[q.pid].name:q.m.opts[q.m.a]}</td><td>${dx?PM[q.chosen].name:q.m.opts[q.chosen]}</td><td>${isOk(q)?'<b style="color:var(--good)">Correct</b>':`<button class="btn small" data-rev="${i}">Review</button>`}</td></tr>`}).join('')}</tbody></table></div>
+  <div class="tw"><table><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Your answer</th><th></th></tr></thead><tbody>${e.qs.map((q,i)=>{const dx=q.kind==='dx';return`<tr><td>${i+1}</td><td>${dx?'Diagnosis':q.kind==='mech'?(q.m.type==='why'?'Mechanism':'Integration'):MT[q.m.type]}</td><td>${dx?PM[q.pid].name:(q.m.short||q.m.opts)[q.m.a]}</td><td>${dx?PM[q.chosen].name:(q.m.short||q.m.opts)[q.chosen]}</td><td>${isOk(q)?'<b style="color:var(--good)">Correct</b>':`<button class="btn small" data-rev="${i}">Review</button>`}</td></tr>`}).join('')}</tbody></table></div>
   <div class="row"><button class="btn primary" id="exAgain">New exam</button><button class="btn" id="exDash">Open dashboard</button></div>`;
   $$('[data-rev]',c).forEach(b=>b.addEventListener('click',()=>{const q=e.qs[+b.dataset.rev];openAtlas(q.pid,q.seed)}));
   $('#exAgain',c).addEventListener('click',()=>{$('#qViewer').hidden=false;$('#qMeta').hidden=false;startQuiz()});$('#exDash',c).addEventListener('click',()=>setTab('dash'))}
@@ -1217,6 +1925,7 @@ function buildAtlasList(){const l=$('#aList'),sl=$('#aSel');l.innerHTML='';sl.in
 function showAtlas(id,seed){aCur=id;aSeed=seed??Math.floor(Math.random()*1e9);const p=PM[id];$$('#aList button').forEach(b=>b.setAttribute('aria-current',String(b.dataset.id===id)));$('#aSel').value=id;
   $('#aName').textContent=p.name;const pc=$('#aCat');pc.textContent=CAT[p.cat];pc.className='pill '+p.cat;
   const rec=generate(id,aSeed);aViewer.setRec(rec);aViewer.setAnn($('#aAnn').checked);
+  const wy=$('#aWhy');wy.hidden=!p.mech;wy.innerHTML=p.mech?`<h3>Why it looks this way</h3><p style="margin:0;max-width:96ch">${p.mech}</p>${conChips(p.con).replace('class="conwrap stack"',`class="conwrap stack" data-from="${id}"`)}`:'';
   const sim=(p.sim||[]).map(s=>{const t=(p.vs&&p.vs[s])||(PM[s].vs&&PM[s].vs[id]);return t?`<li><b>${PM[s].name}.</b> ${t}</li>`:''}).join('');
   $('#aInfo').innerHTML=`<div class="stack" style="gap:12px"><div><h3>What to look for</h3><ul class="f">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul></div><div><h3>Measured on this example</h3>${measTable(rec)}</div></div><div class="stack" style="gap:12px"><div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div>${q2Html({pid:id,rec},false)}${sim?`<div><h3>Do not confuse with</h3><ul class="f">${sim}</ul></div>`:''}</div>`}
 $('#aNew').addEventListener('click',()=>aCur&&showAtlas(aCur));
@@ -1229,6 +1938,7 @@ function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.le
   const tiles=`<div class="tiles"><div class="card tile"><div class="lbl">Diagnoses</div><div class="n">${tot}</div><div class="s">${DB.exams.length} ${DB.exams.length===1?'exam':'exams'} taken</div></div>
   <div class="card tile"><div class="lbl">Diagnosis accuracy</div><div class="n">${tot?pct(ok,tot)+'%':'–'}</div><div class="s">${unaided.length?`${pct(uok,unaided.length)}% without hints`:'no answers yet'}</div></div>
   <div class="card tile"><div class="lbl">Measurements</div><div class="n">${MS.length?pct(mok,MS.length)+'%':'–'}</div><div class="s">${MS.length} measurement answers</div></div>
+  <div class="card tile"><div class="lbl">Mechanism</div><div class="n">${DB.mech.length?pct(DB.mech.filter(x=>x.ok).length,DB.mech.length)+'%':'–'}</div><div class="s">${DB.mech.length} why and integration answers</div></div>
   <div class="card tile"><div class="lbl">Follow-ups</div><div class="n">${Q2.length?pct(q2ok,Q2.length)+'%':'–'}</div><div class="s">culprit and management</div></div>
   <div class="card tile"><div class="lbl">Best streak</div><div class="n">${DB.best||0}</div><div class="s">in a row, practice mode</div></div></div>`;
   const cats=Object.keys(CAT).map(c=>{let n=0,o=0;P.filter(p=>p.cat===c).forEach(p=>{n+=st[p.id].n;o+=st[p.id].ok});return{c,n,o}});
@@ -1247,7 +1957,7 @@ function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.le
   d.innerHTML=tiles+`<div class="two">${bars}${mbars}</div><div class="two">${weakH}${confH}</div>`+trend+heat+(exH?`<div class="two">${exH}<div></div></div>`:'')+`<div class="row"><button class="btn small" id="resetBtn" type="button">Reset progress</button></div>`;
   $$('[data-open]',d).forEach(b=>b.addEventListener('click',()=>openAtlas(b.dataset.open)));
   const db=$('#drillBtn',d);if(db)db.addEventListener('click',()=>{setDrill(weak.map(w=>w.p.id));setTab('quiz')});
-  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],meas:[],q2:[],exams:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
+  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],meas:[],q2:[],exams:[],mech:[],path:{},traj:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
 
 /* ============ shared UI helpers for the deep-dive sections ============ */
 const AX={built:{},cur:'pat',draws:{}};
@@ -1834,7 +2544,8 @@ function buildMech(){const H=$('#aMech');H.innerHTML='';AX.draws.mech=[];
   const labs=[['ap','Action potentials & ions',buildApLab],['cond','Conduction system',typeof buildCondLab==='function'?buildCondLab:null],['cor','Coronary flow & occlusion',typeof buildCorLab==='function'?buildCorLab:null]].filter(x=>x[2]);
   const nav=el('div','row');H.appendChild(nav);const box=el('div','stack');H.appendChild(box);const made={};
   const show=k=>{$$('.mpane',box).forEach(p=>p.hidden=p.dataset.k!==k);if(!made[k]){const p=el('div','stack mpane');p.dataset.k=k;box.appendChild(p);made[k]=labs.find(l=>l[0]===k)[2](p)}AX.draws.mech=[()=>made[k]&&made[k].draw&&made[k].draw()];setTimeout(()=>AX.draws.mech.forEach(f=>f()),0)};
-  segment(nav,labs.map(l=>[l[0],l[1]]),'ap',show);show('ap')}
+  const sg=segment(nav,labs.map(l=>[l[0],l[1]]),'ap',show);show('ap');AX.mechShow=k=>{const b=$$('button',sg).find(x=>x.dataset.v===k);if(b)b.click()}}
+function openLab(k){setTab('atlas');setSub('mech');if(AX.mechShow)AX.mechShow(k);window.scrollTo({top:0,behavior:'smooth'})}
 /* ============ tabs & atlas sub-sections ============ */
 const SUBS={mech:buildMech,sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig},SID={pat:'#aPat',mech:'#aMech',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig'};
 function redrawSub(){if(AX.cur==='pat'){aViewer.draw();return}(AX.draws[AX.cur]||[]).forEach(f=>f())}
@@ -1850,7 +2561,7 @@ function setTab(t){$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',
 $$('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 buildAtlasList();
 const h0=(location.hash||'').slice(1),hs=h0.split('/');if(['quiz','atlas','dash'].includes(hs[0]))setTab(hs[0]);if(hs[0]==='atlas'&&SUBS[hs[1]])setSub(hs[1]);
-window.__ecg={GEN,generate,P,PM,setTab,setSub,showAtlas,S,newQ,measOptions};
+window.__ecg={GEN,generate,P,PM,CON,CIDX,makeMech,mkRand,DB:()=>DB,setTab,setSub,showAtlas,S,newQ,measOptions,showRec:(pid,seed)=>{const rec=generate(pid,seed??1);aViewer.setRec(rec);aViewer.setAnn(true);return{meta:rec.meta,ann:rec.ann.length}}};
 })();
 
 </script>

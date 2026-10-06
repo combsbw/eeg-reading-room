@@ -13,5 +13,5 @@ function setTab(t){$$('.tabs button').forEach(b=>b.setAttribute('aria-selected',
 $$('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
 buildAtlasList();
 const h0=(location.hash||'').slice(1),hs=h0.split('/');if(['quiz','atlas','dash'].includes(hs[0]))setTab(hs[0]);if(hs[0]==='atlas'&&SUBS[hs[1]])setSub(hs[1]);
-window.__ecg={GEN,generate,P,PM,setTab,setSub,showAtlas,S,newQ,measOptions};
+window.__ecg={GEN,generate,P,PM,CON,CIDX,makeMech,mkRand,DB:()=>DB,setTab,setSub,showAtlas,S,newQ,measOptions,showRec:(pid,seed)=>{const rec=generate(pid,seed??1);aViewer.setRec(rec);aViewer.setAnn(true);return{meta:rec.meta,ann:rec.ann.length}}};
 })();

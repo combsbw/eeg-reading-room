@@ -39,7 +39,7 @@ function Viewer(host,opt={}){
   wrap.addEventListener('change',e=>{const c=e.target,k=c.dataset.k;if(!k)return;self.v[k]=c.type==='checkbox'?c.checked:(['fmt','filt','strip'].includes(k)?c.value:+c.value);self.draw()});
   const rb=$('[data-k=reset]',wrap);if(rb)rb.addEventListener('click',()=>{self.v={...DEFV,...(opt.v||{})};sync();self.meas=null;read.innerHTML='&nbsp;';self.draw()});
   const cb=$('[data-k=cal]',wrap);if(cb)cb.addEventListener('click',()=>{self.cal=!self.cal;cb.setAttribute('aria-pressed',String(self.cal));cv.style.touchAction=self.cal?'none':'pan-x pan-y'});
-  self.setRec=rec=>{self.rec=rec;self.meas=null;read.innerHTML='&nbsp;';sync();self.draw()};
+  self.setRec=rec=>{self.rec=rec;self.meas=null;read.innerHTML='&nbsp;';if(rec.opt&&rec.opt.strip){self.v.strip=rec.opt.strip;self._as=1}else if(self._as){self.v.strip=(opt.v&&opt.v.strip)||DEFV.strip;self._as=0}sync();self.draw()};
   self.setAnn=b=>{self.ann=b;self.draw()};
   self.setOverlay=f=>{self.overlay=f;self.draw()};
   self.draw=()=>{if(!self.rec)return;const rec=self.rec,v=self.v,D=leadData(rec,v),C=cssv(),dpr=window.devicePixelRatio||1;

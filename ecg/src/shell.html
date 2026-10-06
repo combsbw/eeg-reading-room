@@ -33,7 +33,7 @@
     <div class="card stack" id="qSetup">
       <div class="row">
         <div class="row"><span class="lbl">Mode</span><div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (15)</button></div></div>
-        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
+        <div class="row"><span class="lbl">Questions</span><div class="seg" id="segType"><button data-v="dx" aria-pressed="true">Diagnosis</button><button data-v="meas" aria-pressed="false">Measurements</button><button data-v="mech" aria-pressed="false">Mechanism</button><button data-v="mix" aria-pressed="false">Mixed</button></div></div>
         <div class="row"><span class="lbl">Difficulty</span><div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
       </div>
       <div class="row" id="catChips"><span class="lbl">Include</span></div>
@@ -61,7 +61,7 @@
 
     <div id="qIntro" class="card">
       <h2>Pick a mode and press Start</h2>
-      <p style="margin-top:6px;color:var(--muted);max-width:74ch">Diagnosis questions ask for the main finding and follow up with a culprit-artery or management question where it matters. Measurement questions ask for rate, regularity, axis, PR, QRS or QTc, computed from the tracing itself. Practice adapts to the patterns you miss; Exam runs fifteen questions and reviews them at the end. Change the layout, gain, speed or filter on any tracing, and drag across it to use calipers.</p>
+      <p style="margin-top:6px;color:var(--muted);max-width:74ch">Diagnosis questions ask for the main finding and follow up with a culprit-artery or management question where it matters. Measurement questions ask for rate, regularity, axis, PR, QRS or QTc, computed from the tracing itself. Mechanism questions ask why the tracing looks the way it does, and which other patterns share that mechanism. Practice adapts to the patterns you miss; Exam runs fifteen questions and reviews them at the end. Change the layout, gain, speed or filter on any tracing, and drag across it to use calipers.</p>
     </div>
 
     <div id="qStage" class="stack" hidden>
@@ -89,6 +89,7 @@
           </div>
         </div>
         <div id="aViewer"></div>
+        <div class="card stack" id="aWhy"></div>
         <div class="card two" id="aInfo"></div>
       </div>
     </div>

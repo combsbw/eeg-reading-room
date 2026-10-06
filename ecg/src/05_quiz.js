@@ -1,8 +1,8 @@
 
 /* ============ storage ============ */
 const KEY='ecgrr.v1';
-const store={load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.answers)){s.meas=s.meas||[];s.q2=s.q2||[];s.exams=s.exams||[];return s}}catch(_){}return{answers:[],meas:[],q2:[],exams:[],best:0}},
-  save(s){try{s.answers=s.answers.slice(-800);s.meas=s.meas.slice(-500);s.q2=s.q2.slice(-300);localStorage.setItem(KEY,JSON.stringify(s))}catch(_){}}};
+const store={load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.answers)){s.meas=s.meas||[];s.q2=s.q2||[];s.exams=s.exams||[];s.mech=s.mech||[];s.path=s.path||{};s.traj=s.traj||[];return s}}catch(_){}return{answers:[],meas:[],q2:[],exams:[],mech:[],path:{},traj:[],best:0}},
+  save(s){try{s.answers=s.answers.slice(-800);s.meas=s.meas.slice(-500);s.q2=s.q2.slice(-300);s.mech=(s.mech||[]).slice(-800);s.traj=(s.traj||[]).slice(-500);localStorage.setItem(KEY,JSON.stringify(s))}catch(_){}}};
 let DB=store.load();
 function patStats(){const o={};P.forEach(p=>o[p.id]={n:0,ok:0});DB.answers.forEach(a=>{const s=o[a.pid];if(s){s.n++;if(a.ok)s.ok++}});return o}
 
@@ -30,6 +30,25 @@ function makeMeas(R,type,r){const M=R.meta;let q,opts,a,why;const rr=M.hr?60000/
   else{opts=['Short (under 360 ms)','Normal (360–449 ms)','Borderline to prolonged (450–499 ms)','Markedly prolonged (500 ms or more)'];const v=M.qtcB;a=v<360?0:v<450?1:v<500?2:3;q='What is the corrected QT (QTc)?';why=`QT about ${M.qt} ms at a rate of ${M.hr}/min (R–R ${Math.round(rr)} ms). Bazett QTc ≈ ${M.qtcB} ms; Fridericia ≈ ${M.qtcF} ms. Quick check: a QT longer than half the R–R interval is usually prolonged.`}
   return{type,q,opts,a,why}}
 
+/* ============ mechanism & integration questions ============ */
+const lc=t=>/^[A-Z][A-Z0-9]/.test(t)?t:t.charAt(0).toLowerCase()+t.slice(1);
+const firstS=t=>{const m=t.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():t};
+function conChips(ids){const l=(ids||[]).filter(c=>CON[c]);if(!l.length)return'';return`<div class="conwrap stack" style="gap:8px"><div class="row" style="gap:6px">${l.map(c=>`<button class="chip con" type="button" data-con="${c}" aria-pressed="false"><span class="dot ${CON[c].d}"></span>${CON[c].n}</button>`).join('')}</div><div class="conbox" hidden></div></div>`}
+function conPanel(c,from){const k=CON[c],mates=CIDX[c].filter(x=>x!==from);return`<div class="note stack" style="gap:8px"><div><span class="lbl">${DOM[k.d]}</span><div style="margin-top:2px"><b>${k.n}.</b> ${k.s}</div></div>${mates.length?`<div><span class="lbl">Same mechanism, different tracing</span><div class="row" style="gap:6px;margin-top:4px">${mates.map(x=>`<button class="chip" type="button" data-pat="${x}">${PM[x].name}</button>`).join('')}</div></div>`:''}${k.lab?`<div><button class="btn small" type="button" data-lab="${k.lab}">See it in the ${{ap:'action potential',cond:'conduction',cor:'coronary'}[k.lab]} lab</button></div>`:''}</div>`}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-con]');if(b){const w=b.closest('.conwrap'),box=w&&$('.conbox',w);if(!box)return;const on=b.getAttribute('aria-pressed')!=='true';$$('[data-con]',w).forEach(x=>x.setAttribute('aria-pressed','false'));if(on){b.setAttribute('aria-pressed','true');box.innerHTML=conPanel(b.dataset.con,w.dataset.from||'');box.hidden=false}else box.hidden=true;return}
+  const pb=e.target.closest('[data-pat]');if(pb){openAtlas(pb.dataset.pat);return}const lb=e.target.closest('[data-lab]');if(lb){openLab(lb.dataset.lab)}});
+function makeMech(R,r,type){const p=PM[R.pid],cs=p.con.filter(c=>CON[c]);if(!cs.length)return null;const linkable=cs.filter(c=>CIDX[c].length>1);
+  type=type||(linkable.length&&r.u()<.45?'link':'why');if(type==='link'&&!linkable.length)type='why';const hide=S.diff==='hard';
+  if(type==='why'){const c=cs[0],avoid=new Set(cs),cand=[];(p.sim||[]).forEach(x=>{const q=PM[x];if(q&&q.con[0])cand.push(q.con[0])});
+    shuffle(Object.keys(CON).filter(k=>CON[k].d===CON[c].d),r).forEach(k=>cand.push(k));shuffle(Object.keys(CON),r).forEach(k=>cand.push(k));
+    const d=[];for(const k of cand){if(!avoid.has(k)&&!d.includes(k))d.push(k);if(d.length===3)break}const ids=shuffle([c,...d],r);
+    return{type:'why',c,ids,q:hide?'Which mechanism best explains this tracing?':`Tracing: ${p.name}. Which mechanism best explains what you see (${lc(p.feats[0])})?`,opts:ids.map(k=>CON[k].s),short:ids.map(k=>CON[k].n),a:ids.indexOf(c),
+      why:p.mech,extra:d.map(k=>{const ex=CIDX[k].filter(x=>x!==p.id);return`<li><b>${CON[k].n}</b>${ex.length?` drives ${ex.slice(0,2).map(x=>lc(PM[x].name)).join(' and ')}`:''}.</li>`}).join('')}}
+  const c=linkable[Math.floor(r.u()*linkable.length)],mates=CIDX[c].filter(x=>x!==p.id),other=mates.filter(x=>PM[x].cat!==p.cat),pl=other.length?other:mates,ans=pl[Math.floor(r.u()*pl.length)];
+  const not=x=>x!==p.id&&!PM[x].con.includes(c),d=[...new Set([...shuffle((p.sim||[]).filter(not),r),...shuffle(P.map(x=>x.id).filter(not),r)])].slice(0,3),ids=shuffle([ans,...d],r);
+  return{type:'link',c,ids,q:`${hide?'':`Tracing: ${p.name}. `}Which of these runs on the same core mechanism, <i>${lc(CON[c].n)}</i>?`,opts:ids.map(x=>PM[x].name),short:ids.map(x=>PM[x].name),a:ids.indexOf(ans),
+    why:`<b>${PM[ans].name}.</b> ${PM[ans].mech}`,extra:`<li><b>Shared mechanism: ${CON[c].n}.</b> ${CON[c].s}</li>`+d.map(x=>{const k=PM[x].con[0];return`<li><b>${PM[x].name}</b>${k&&CON[k]?` runs mainly on ${lc(CON[k].n)}`:''}${(p.sim||[]).includes(x)?' (a look-alike with a different mechanism)':''}.</li>`}).join('')}}
+
 /* ============ quiz ============ */
 const S={mode:'practice',qt:'dx',diff:'standard',cats:Object.fromEntries(Object.keys(CAT).map(k=>[k,1])),drill:null,q:null,exam:null,streak:0,seen:[]};
 const qViewer=Viewer($('#qViewer')),aViewer=Viewer($('#aViewer'));
@@ -44,12 +63,13 @@ function options(pid,r){const p=PM[pid],all=P.map(x=>x.id).filter(x=>x!==pid),sa
   d=[...new Set(d)].slice(0,3);return shuffle([pid,...d],r)}
 function newQ(pid,kind,seed){seed=seed??Math.floor(Math.random()*1e9);const r=mkRand(seed+3),rec=generate(pid,seed);
   if(kind==='meas'){const ts=measOptions(rec,r);if(ts.length){const t=ts[Math.floor(r.u()*ts.length)];return{kind,pid,seed,rec,m:makeMeas(rec,t,r),chosen:null,hint:0}}}
+  if(kind==='mech'){const m=makeMech(rec,r);if(m)return{kind,pid,seed,rec,m,chosen:null,hint:0}}
   return{kind:'dx',pid,seed,rec,opts:options(pid,r),chosen:null,hint:0,q2c:null}}
-const kindNow=()=>S.qt==='mix'?(Math.random()<.45?'meas':'dx'):S.qt;
+const kindNow=()=>{if(S.qt!=='mix')return S.qt;const x=Math.random();return x<.42?'dx':x<.7?'meas':'mech'};
 function setStage(){$('#qIntro').hidden=!!S.q||!!S.exam&&S.exam.done;$('#qStage').hidden=!S.q&&!(S.exam&&S.exam.done)}
 function showQ(q){S.q=q;S.seen.push(q.pid);setStage();qViewer.setRec(q.rec);qViewer.setAnn(false);$('#qAnn').checked=false;renderCard()}
 const isOk=q=>q.kind==='dx'?q.chosen===q.pid:q.chosen===q.m.a;
-function recordAnswer(q,mode){const ok=isOk(q);if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
+function recordAnswer(q,mode){const ok=isOk(q);if(q.kind==='dx')DB.answers.push({pid:q.pid,ch:q.chosen,ok,h:q.hint>0?1:0,m:mode,ts:Date.now()});else if(q.kind==='mech')DB.mech.push({pid:q.pid,t:q.m.type,c:q.m.c,ok,m:mode,ts:Date.now()});else DB.meas.push({pid:q.pid,t:q.m.type,ok,m:mode,ts:Date.now()});
   if(mode==='practice'){S.streak=ok?S.streak+1:0;DB.best=Math.max(DB.best||0,S.streak)}store.save(DB);return ok}
 function startQuiz(){S.streak=0;S.seen=[];if(S.mode==='exam'){const st=patStats(),r=mkRand(Date.now()),pl=pool();let ids=pl.map(p=>({id:p.id,w:(st[p.id].n?1+2*(1-st[p.id].ok/st[p.id].n):2)*r.u()})).sort((a,b)=>b.w-a.w).slice(0,Math.min(15,pl.length)).map(x=>x.id);
     while(ids.length<15)ids.push(pl[Math.floor(r.u()*pl.length)].id);ids=shuffle(ids,r);S.exam={qs:ids.map(id=>newQ(id,kindNow())),i:0,done:false};showQ(S.exam.qs[0])}
@@ -62,7 +82,13 @@ function q2Html(q,interactive){const p=PM[q.pid];if(!p.q2)return'';const a=typeo
 function renderCard(){const q=S.q,card=$('#qCard'),p=PM[q.pid],ex=!!S.exam&&!S.exam.done,answered=q.chosen!==null&&!ex;
   $('#qCount').textContent=ex?`Question ${S.exam.i+1} of ${S.exam.qs.length}`:`Practice · streak ${S.streak}`;$('#qProgWrap').hidden=!ex;if(ex)$('#qProg').style.width=(S.exam.i/S.exam.qs.length*100)+'%';$('#qAnn').disabled=ex;
   let h='';
-  if(q.kind==='meas'){const m=q.m;
+  if(q.kind==='mech'){const m=q.m,tag=m.type==='why'?'Mechanism':'Integration';
+    if(!answered){h+=`<div class="row" style="justify-content:space-between"><h2 style="max-width:70ch">${m.q}</h2><span class="pill">${tag}</span></div><div class="qgrid ${m.type==='why'?'long':''}">${m.opts.map((o,i)=>`<button class="opt" data-mi="${i}"><kbd>${i+1}</kbd><span>${o}</span></button>`).join('')}</div>`}
+    else{const ok=isOk(q);h+=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${m.short[m.a]}</span><span class="pill">${tag}</span></div><div class="qgrid ${m.type==='why'?'long':''}">${m.opts.map((o,i)=>`<div class="opt ${i===m.a?'ok':i===q.chosen?'no':''}" style="opacity:${i===m.a||i===q.chosen?1:.55}"><span>${o}</span></div>`).join('')}</div>
+      <div class="two"><div><h3>${m.type==='why'?'Why it looks this way':'The connection'}</h3><p style="margin-top:6px">${m.why}</p></div><div><h3>${m.type==='why'?'Where the other mechanisms show up':'How the options differ'}</h3><ul class="f">${m.extra}</ul></div></div>
+      <div class="conwrap-host" data-from="${q.pid}">${conChips(p.con).replace('class="conwrap stack"',`class="conwrap stack" data-from="${q.pid}"`)}</div><p class="lbl" style="text-transform:none;letter-spacing:0">The tracing shows: <b>${p.name}</b>.</p>
+      <div class="row"><button class="btn primary" id="qNext">Next (N)</button><button class="btn" id="qAtlas">Open in Atlas</button></div>`}}
+  else if(q.kind==='meas'){const m=q.m;
     if(!answered){h+=`<div class="row" style="justify-content:space-between"><h2>${m.q}</h2><span class="pill">${MT[m.type]}</span></div><p class="lbl" style="text-transform:none;letter-spacing:0">Use the calipers: drag across the tracing to read Δt, rate and amplitude.</p><div class="qgrid">${m.opts.map((o,i)=>`<button class="opt" data-mi="${i}"><kbd>${i+1}</kbd><span><b style="font-weight:500">${o}</b></span></button>`).join('')}</div>`}
     else{const ok=isOk(q);h+=`<div class="verdict ${ok?'ok':'no'}">${ok?'Correct':'Not quite'}<span style="color:var(--ink);font-weight:500"> · ${m.opts[m.a]}</span></div><div class="qgrid">${m.opts.map((o,i)=>`<div class="opt ${i===m.a?'ok':i===q.chosen?'no':''}" style="opacity:${i===m.a||i===q.chosen?1:.55}"><span>${o}</span></div>`).join('')}</div>
       <div class="two"><div><h3>How to get it</h3><p style="margin-top:6px">${m.why}</p></div><div><h3>Measured on this tracing</h3>${measTable(q.rec)}</div></div><p class="lbl" style="text-transform:none;letter-spacing:0">The tracing shows: <b>${p.name}</b>.</p>
@@ -75,7 +101,7 @@ function renderCard(){const q=S.q,card=$('#qCard'),p=PM[q.pid],ex=!!S.exam&&!S.e
     h+=`<div class="qgrid">${q.opts.map(id=>`<div class="opt ${id===q.pid?'ok':id===q.chosen?'no':''}" style="opacity:${id===q.pid||id===q.chosen?1:.55}"><span><b style="font-weight:500">${PM[id].name}</b></span></div>`).join('')}</div>`;
     h+=`<div class="two"><div><h3>What to look for</h3><ul class="f">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul></div><div class="stack" style="gap:10px">`;
     if(!ok){const t=(p.vs&&p.vs[q.chosen])||(PM[q.chosen].vs&&PM[q.chosen].vs[q.pid])||`Compare the defining feature of ${PM[q.chosen].name.toLowerCase()} (“${PM[q.chosen].feats[0]}”) with this tracing.`;h+=`<div class="note"><b>Versus ${PM[q.chosen].name}.</b> ${t}</div>`}
-    h+=`<div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div></div></div>${q2Html(q,true)}<details><summary>Measured on this tracing</summary>${measTable(q.rec)}</details>`;
+    h+=`<div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div></div></div>${p.mech?`<div class="stack" style="gap:8px"><h3>Why it looks this way</h3><p style="margin:0">${p.mech}</p>${conChips(p.con).replace('class="conwrap stack"',`class="conwrap stack" data-from="${q.pid}"`)}</div>`:''}${q2Html(q,true)}<details><summary>Measured on this tracing</summary>${measTable(q.rec)}</details>`;
     h+=`<div class="row"><button class="btn primary" id="qNext">Next (N)</button><button class="btn" id="qAtlas">Open in Atlas</button></div>`}
   card.innerHTML=h;
   $$('.opt[data-id]',card).forEach(b=>b.addEventListener('click',()=>choose(b.dataset.id)));$$('.opt[data-mi]',card).forEach(b=>b.addEventListener('click',()=>choose(+b.dataset.mi)));
@@ -90,7 +116,7 @@ function next(){if(S.exam&&!S.exam.done)return;showQ(newQ(pickPattern(),kindNow(
 function finishExam(){const e=S.exam,score=e.qs.filter(isOk).length;e.done=true;DB.exams.push({ts:Date.now(),score,n:e.qs.length});store.save(DB);
   S.q=null;setStage();$('#qStage').hidden=false;$('#qViewer').hidden=true;$('#qMeta').hidden=true;
   const c=$('#qCard');c.innerHTML=`<h2>Exam complete: ${score} of ${e.qs.length}</h2><div class="prog"><i style="width:${score/e.qs.length*100}%"></i></div>
-  <div class="tw"><table><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Your answer</th><th></th></tr></thead><tbody>${e.qs.map((q,i)=>{const dx=q.kind==='dx';return`<tr><td>${i+1}</td><td>${dx?'Diagnosis':MT[q.m.type]}</td><td>${dx?PM[q.pid].name:q.m.opts[q.m.a]}</td><td>${dx?PM[q.chosen].name:q.m.opts[q.chosen]}</td><td>${isOk(q)?'<b style="color:var(--good)">Correct</b>':`<button class="btn small" data-rev="${i}">Review</button>`}</td></tr>`}).join('')}</tbody></table></div>
+  <div class="tw"><table><thead><tr><th>#</th><th>Question</th><th>Answer</th><th>Your answer</th><th></th></tr></thead><tbody>${e.qs.map((q,i)=>{const dx=q.kind==='dx';return`<tr><td>${i+1}</td><td>${dx?'Diagnosis':q.kind==='mech'?(q.m.type==='why'?'Mechanism':'Integration'):MT[q.m.type]}</td><td>${dx?PM[q.pid].name:(q.m.short||q.m.opts)[q.m.a]}</td><td>${dx?PM[q.chosen].name:(q.m.short||q.m.opts)[q.chosen]}</td><td>${isOk(q)?'<b style="color:var(--good)">Correct</b>':`<button class="btn small" data-rev="${i}">Review</button>`}</td></tr>`}).join('')}</tbody></table></div>
   <div class="row"><button class="btn primary" id="exAgain">New exam</button><button class="btn" id="exDash">Open dashboard</button></div>`;
   $$('[data-rev]',c).forEach(b=>b.addEventListener('click',()=>{const q=e.qs[+b.dataset.rev];openAtlas(q.pid,q.seed)}));
   $('#exAgain',c).addEventListener('click',()=>{$('#qViewer').hidden=false;$('#qMeta').hidden=false;startQuiz()});$('#exDash',c).addEventListener('click',()=>setTab('dash'))}
@@ -109,6 +135,7 @@ function buildAtlasList(){const l=$('#aList'),sl=$('#aSel');l.innerHTML='';sl.in
 function showAtlas(id,seed){aCur=id;aSeed=seed??Math.floor(Math.random()*1e9);const p=PM[id];$$('#aList button').forEach(b=>b.setAttribute('aria-current',String(b.dataset.id===id)));$('#aSel').value=id;
   $('#aName').textContent=p.name;const pc=$('#aCat');pc.textContent=CAT[p.cat];pc.className='pill '+p.cat;
   const rec=generate(id,aSeed);aViewer.setRec(rec);aViewer.setAnn($('#aAnn').checked);
+  const wy=$('#aWhy');wy.hidden=!p.mech;wy.innerHTML=p.mech?`<h3>Why it looks this way</h3><p style="margin:0;max-width:96ch">${p.mech}</p>${conChips(p.con).replace('class="conwrap stack"',`class="conwrap stack" data-from="${id}"`)}`:'';
   const sim=(p.sim||[]).map(s=>{const t=(p.vs&&p.vs[s])||(PM[s].vs&&PM[s].vs[id]);return t?`<li><b>${PM[s].name}.</b> ${t}</li>`:''}).join('');
   $('#aInfo').innerHTML=`<div class="stack" style="gap:12px"><div><h3>What to look for</h3><ul class="f">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul></div><div><h3>Measured on this example</h3>${measTable(rec)}</div></div><div class="stack" style="gap:12px"><div><h3>Clinical note</h3><p style="margin-top:6px">${p.sig}</p></div>${q2Html({pid:id,rec},false)}${sim?`<div><h3>Do not confuse with</h3><ul class="f">${sim}</ul></div>`:''}</div>`}
 $('#aNew').addEventListener('click',()=>aCur&&showAtlas(aCur));
@@ -121,6 +148,7 @@ function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.le
   const tiles=`<div class="tiles"><div class="card tile"><div class="lbl">Diagnoses</div><div class="n">${tot}</div><div class="s">${DB.exams.length} ${DB.exams.length===1?'exam':'exams'} taken</div></div>
   <div class="card tile"><div class="lbl">Diagnosis accuracy</div><div class="n">${tot?pct(ok,tot)+'%':'–'}</div><div class="s">${unaided.length?`${pct(uok,unaided.length)}% without hints`:'no answers yet'}</div></div>
   <div class="card tile"><div class="lbl">Measurements</div><div class="n">${MS.length?pct(mok,MS.length)+'%':'–'}</div><div class="s">${MS.length} measurement answers</div></div>
+  <div class="card tile"><div class="lbl">Mechanism</div><div class="n">${DB.mech.length?pct(DB.mech.filter(x=>x.ok).length,DB.mech.length)+'%':'–'}</div><div class="s">${DB.mech.length} why and integration answers</div></div>
   <div class="card tile"><div class="lbl">Follow-ups</div><div class="n">${Q2.length?pct(q2ok,Q2.length)+'%':'–'}</div><div class="s">culprit and management</div></div>
   <div class="card tile"><div class="lbl">Best streak</div><div class="n">${DB.best||0}</div><div class="s">in a row, practice mode</div></div></div>`;
   const cats=Object.keys(CAT).map(c=>{let n=0,o=0;P.filter(p=>p.cat===c).forEach(p=>{n+=st[p.id].n;o+=st[p.id].ok});return{c,n,o}});
@@ -139,4 +167,4 @@ function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.le
   d.innerHTML=tiles+`<div class="two">${bars}${mbars}</div><div class="two">${weakH}${confH}</div>`+trend+heat+(exH?`<div class="two">${exH}<div></div></div>`:'')+`<div class="row"><button class="btn small" id="resetBtn" type="button">Reset progress</button></div>`;
   $$('[data-open]',d).forEach(b=>b.addEventListener('click',()=>openAtlas(b.dataset.open)));
   const db=$('#drillBtn',d);if(db)db.addEventListener('click',()=>{setDrill(weak.map(w=>w.p.id));setTab('quiz')});
-  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],meas:[],q2:[],exams:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
+  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],meas:[],q2:[],exams:[],mech:[],path:{},traj:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}

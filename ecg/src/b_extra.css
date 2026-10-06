@@ -2,6 +2,9 @@
 .pill.cond{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
 .pill.isch{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
 .pill.struct{color:#8a5bd0;border-color:color-mix(in srgb,#8a5bd0 45%,var(--line))}
+.pill.pace{color:#b0612a;border-color:color-mix(in srgb,#b0612a 45%,var(--line))}
+.pill.chan{color:#c23d7a;border-color:color-mix(in srgb,#c23d7a 45%,var(--line))}
+.pill.mimic{color:var(--muted)}
 .pill.meta{color:#1d8686;border-color:color-mix(in srgb,#1d8686 45%,var(--line))}
 .pill.mimic{color:var(--muted)}
 .axg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
@@ -33,3 +36,8 @@ details summary{margin-top:4px}
 .cdcur{position:absolute;left:0;top:0;width:2px;background:var(--mark);pointer-events:none;opacity:.85}
 #cdSvg path,#cdSvg ellipse,#cdSvg circle{transition:fill .05s}
 .corg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.corg{grid-template-columns:1fr}}
+.chip.con{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.chip.con .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.chip.con .dot.cell,.dot.cell{background:#1d8686}.chip.con .dot.cond,.dot.cond{background:var(--warn)}.chip.con .dot.flow,.dot.flow{background:var(--bad)}.chip.con .dot.struct,.dot.struct{background:#8a5bd0}.chip.con .dot.sys,.dot.sys{background:var(--accent)}
+.qgrid.long{grid-template-columns:1fr}
+.qgrid.long .opt span{font-size:14px;line-height:1.45}

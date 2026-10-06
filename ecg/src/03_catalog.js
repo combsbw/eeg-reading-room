@@ -1,6 +1,6 @@
 
 /* ============ pattern catalogue ============ */
-const CAT={normal:"Normal & variants",rhythm:"Rhythms & ectopy",cond:"Conduction & blocks",isch:"Ischemia & infarction",struct:"Chamber & structure",meta:"Electrolytes, drugs & temperature",mimic:"Mimics & technical"};
+const CAT={normal:"Normal & variants",rhythm:"Rhythms & ectopy",cond:"Conduction & blocks",pace:"Pacing & devices",isch:"Ischemia & infarction",struct:"Chamber & structure",chan:"Channelopathies & cardiomyopathies",meta:"Electrolytes, drugs & temperature",mimic:"Mimics & technical"};
 const CULPRIT=["Proximal LAD (before the first diagonal)","Right coronary artery","Left circumflex (or obtuse marginal)","First diagonal / high lateral branch","Left main or multivessel disease"];
 const P=[
 /* ---- normal & variants ---- */
@@ -147,12 +147,12 @@ const P=[
  hints:["Measure the PR and look at the start of the QRS."],sim:["rbbb","avb1","lbbb","poststemi"],
  vs:{rbbb:"RBBB has a normal PR and terminal (not initial) slurring.",poststemi:"Posterior MI has a normal PR, no delta wave and ST depression in V1–V3."},
  q2:{q:"If this patient develops AF, which treatment is dangerous?",opts:["AV-nodal blockers (adenosine, verapamil, diltiazem, beta-blockers)","Procainamide","Synchronized cardioversion","Ablation of the accessory pathway"],a:0,why:"Blocking the AV node leaves the accessory pathway as the only route, allowing extremely rapid ventricular rates and VF."}},
-{id:"vpace",cat:"cond",name:"Paced rhythm",
+{id:"vpace",cat:"pace",name:"Paced rhythm",
  feats:["Pacing spike immediately before each QRS","Wide QRS (120 ms or more) with an LBBB-like shape from right-ventricular pacing","Superior axis with RV apical pacing (negative II, III, aVF)","Discordant ST-T; sensed P waves or atrial spikes may precede it"],
  sig:"Expected discordance makes ischemia hard to read; modified Sgarbossa criteria apply to RV-paced rhythms. Check capture, sensing and the programmed rate. Bipolar spikes are small and are easily lost with the 40 Hz monitor filter.",
  hints:["Look just before the QRS."],sim:["lbbb","vt","fcap","aivr"],
  vs:{lbbb:"LBBB has no spikes and usually a normal or left axis.",fcap:"Failure to capture shows spikes without a following QRS."}},
-{id:"fcap",cat:"cond",name:"Pacemaker failure to capture",
+{id:"fcap",cat:"pace",name:"Pacemaker failure to capture",
  feats:["Pacing spikes not followed by a QRS","Captured beats are wide and paced","Pauses filled by slow native escape beats","Spikes at the programmed interval"],
  sig:"Lead dislodgement or fracture, rising threshold (MI, hyperkalemia, acidosis, drugs), battery depletion or programming. If symptomatic, transcutaneous pacing and device interrogation. Contrast with undersensing (spikes in the wrong place) and oversensing (missing spikes).",
  hints:["Is every spike followed by a QRS?"],sim:["vpace","mob2","avb3","artifact"],
@@ -227,7 +227,7 @@ const P=[
  sig:"Pulmonary hypertension, chronic lung disease, congenital heart disease, mitral or pulmonary stenosis. A dominant R in V1 also occurs with RBBB, posterior MI, WPW, HCM, dextrocardia, lead misplacement, and normally in children.",
  hints:["What is the axis, and what dominates V1?"],sim:["poststemi","rbbb","lpfb","pe"],
  vs:{poststemi:"Posterior MI has ST depression with upright T waves in V1–V3 and no right axis.",rbbb:"RBBB has a QRS of 120 ms or more with rsR′."}},
-{id:"hcm",cat:"struct",name:"Hypertrophic cardiomyopathy",
+{id:"hcm",cat:"chan",name:"Hypertrophic cardiomyopathy",
  feats:["Deep, narrow (“dagger”) Q waves in lateral (I, aVL, V5–V6) and inferior leads","LVH voltage","Left atrial enlargement","Variable repolarization changes; the apical form gives giant T inversion in V2–V5"],
  sig:"The commonest inherited cardiomyopathy and a cause of sudden death in young athletes; the ECG is abnormal in over 90%. Refer for echocardiography and screen first-degree relatives. Exertional syncope or a family history of sudden death is a red flag.",
  hints:["Compare the width and depth of the lateral Q waves."],sim:["lvh","oldimi","wpw","latstemi"],
@@ -303,7 +303,7 @@ const P=[
  sig:"Diagnosis needs two of: pleuritic chest pain eased by sitting forward, friction rub, typical ECG, effusion. Distinguish from STEMI (reciprocal depression, convex ST, territorial, Q waves) and early repolarization (ST/T ratio in V6 under 0.25). NSAIDs plus colchicine; check for effusion.",
  hints:["Is the elevation territorial?","Look at the PR segment in II and aVR."],sim:["erp","infstemi","antstemi","effusion"],
  vs:{erp:"Early repolarization has no PR depression, is usually bradycardic, and the ST/T ratio in V6 is under 0.25.",infstemi:"Inferior STEMI is territorial with reciprocal depression in aVL."}},
-{id:"brugada",cat:"mimic",name:"Brugada pattern (type 1)",
+{id:"brugada",cat:"chan",name:"Brugada pattern (type 1)",
  feats:["Coved ST elevation of 2 mm or more in V1–V2","The ST segment descends into an inverted T wave","RBBB-like terminal r′ without a wide S in I and V6","Unmasked by fever, sodium-channel blockers or high chest-lead placement"],
  sig:"An inherited sodium-channel disorder with risk of polymorphic VT/VF and sudden death, often at rest or with fever. Spontaneous type 1 with syncope warrants an ICD. Treat fever promptly and avoid sodium-channel blockers. Type 2 (saddleback) is not diagnostic alone.",
  hints:["Look at the ST shape in V1–V2 only."],sim:["rbbb","antstemi","erp","peric"],

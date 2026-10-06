@@ -1,5 +1,5 @@
 /* ============ tabs & atlas sub-sections ============ */
-const SUBS={sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig},SID={pat:'#aPat',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig'};
+const SUBS={mech:buildMech,sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig},SID={pat:'#aPat',mech:'#aMech',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig'};
 function redrawSub(){if(AX.cur==='pat'){aViewer.draw();return}(AX.draws[AX.cur]||[]).forEach(f=>f())}
 function setSub(s){AX.cur=s;$$('#aSub button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sub===s)));Object.keys(SID).forEach(k=>$(SID[k]).hidden=k!==s);
   if(s!=='pat'&&!AX.built[s]){AX.built[s]=1;SUBS[s]()}if(s==='pat'&&!aCur)showAtlas('nsr');redrawSub()}

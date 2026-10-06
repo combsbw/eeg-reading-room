@@ -28,3 +28,8 @@ details summary{margin-top:4px}
 @media (max-width:860px){.plcard{display:none}.msel{display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0}.msel select{flex:1;min-width:0;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}.axg,.sysg{grid-template-columns:1fr}.steps{flex-direction:row;flex-wrap:wrap}.steps button{width:auto}}
 @media (max-width:520px){.minis{grid-template-columns:1fr 1fr}.tcell{padding:10px 2px;font-size:13px}}
 .bar{grid-template-columns:150px 1fr 84px}@media (max-width:560px){.bar{grid-template-columns:108px 1fr 70px}}
+.aplab{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.aplab{grid-template-columns:1fr}}
+.cdcur{position:absolute;left:0;top:0;width:2px;background:var(--mark);pointer-events:none;opacity:.85}
+#cdSvg path,#cdSvg ellipse,#cdSvg circle{transition:fill .05s}
+.corg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.corg{grid-template-columns:1fr}}

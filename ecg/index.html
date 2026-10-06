@@ -191,6 +191,11 @@ details summary{margin-top:4px}
 @media (max-width:860px){.plcard{display:none}.msel{display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0}.msel select{flex:1;min-width:0;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}.axg,.sysg{grid-template-columns:1fr}.steps{flex-direction:row;flex-wrap:wrap}.steps button{width:auto}}
 @media (max-width:520px){.minis{grid-template-columns:1fr 1fr}.tcell{padding:10px 2px;font-size:13px}}
 .bar{grid-template-columns:150px 1fr 84px}@media (max-width:560px){.bar{grid-template-columns:108px 1fr 70px}}
+.aplab{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.aplab{grid-template-columns:1fr}}
+.cdcur{position:absolute;left:0;top:0;width:2px;background:var(--mark);pointer-events:none;opacity:.85}
+#cdSvg path,#cdSvg ellipse,#cdSvg circle{transition:fill .05s}
+.corg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.corg{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -257,7 +262,7 @@ details summary{margin-top:4px}
 
   <!-- ATLAS -->
   <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
-    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
+    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="mech" aria-pressed="false">Mechanisms</button><button type="button" data-sub="sys" aria-pressed="false">Systematic read</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; axis</button><button type="button" data-sub="rate" aria-pressed="false">Rate &amp; intervals</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
     <div class="atlas" id="aPat">
       <div class="card plcard"><div class="plist" id="aList"></div></div>
       <label class="msel lbl">Pattern <select id="aSel"></select></label>
@@ -273,6 +278,7 @@ details summary{margin-top:4px}
         <div class="card two" id="aInfo"></div>
       </div>
     </div>
+    <div class="stack" id="aMech" hidden></div>
     <div class="stack" id="aSys" hidden></div>
     <div class="stack" id="aLead" hidden></div>
     <div class="stack" id="aRate" hidden></div>
@@ -1581,8 +1587,256 @@ function rcLab(H){const st={type:'hp',inp:'step',R:318310,C:1e-6,ratio:.2};
   AX.draws.sig.push(draw);draw()}
 
 
+
+/* ============ mechanism lab: action potentials -> wedge ECG -> 12-lead ============ */
+/* A deliberately simple, parametric model of endocardial, mid-myocardial (M) and epicardial
+   action potentials. It is qualitative: the goal is to show *why* each ECG change happens. */
+const APL={endo:{act:0,plat:190,d3:85,notch:4,col:'ac'},M:{act:11,plat:222,d3:95,notch:14,col:'pu'},epi:{act:27,plat:140,d3:75,notch:26,col:'mk'}};
+const AP0={K:4,Ca:9.5,Mg:2,na:0,ikr:0,ito:1,temp:37,hr:60,isch:'none',dig:false,brug:false};
+const APPRESET=[['Normal',{}],['Hyperkalemia 6.5',{K:6.5}],['Hyperkalemia 8.5',{K:8.5}],['Hypokalemia 2.5',{K:2.5}],['Hypercalcemia',{Ca:13.5}],['Hypocalcemia',{Ca:6.8}],['Sodium-channel block (TCA)',{na:.55,hr:115}],['IKr block (long QT)',{ikr:.65,hr:55}],['Low Mg with IKr block',{ikr:.5,Mg:1.1,hr:55}],['Brugada (RV epicardium)',{ito:2.6,na:.25,brug:true}],['Hypothermia 30 °C',{temp:30,hr:42}],['Transmural ischemia',{isch:'trans'}],['Subendocardial ischemia',{isch:'sub',hr:110}],['Digoxin',{dig:true}]];
+const ghk=(K,iK=0)=>61.5*Math.log10((K+iK+1.47)/(140+.105));
+const naAvail=(Vr,v12=-72)=>1/(1+Math.exp((Vr-v12)/5));
+function apLayer(name,st){const b=APL[name],isch=(st.isch==='trans'&&name==='epi')||(st.isch==='sub'&&name==='endo'),Vr=ghk(st.K,isch?5:0),av=naAvail(Vr)*(1-st.na),avN=naAvail(ghk(4)),rel=Math.max(.05,av/avN),
+  cold=37-st.temp,cvf=Math.sqrt(rel)*(1-.035*cold),Vpk=Vr+115*Math.pow(Math.min(1,rel),.6)*(isch?.85:1),
+  mgAmp=1+Math.max(0,2-st.Mg)*.45,ikr=Math.min(.95,st.ikr*mgAmp);
+  let notch=b.notch*st.ito*(1+.1*Math.max(0,cold))*(1+.8*st.na);if(st.brug&&name==='epi')notch*=1.6;notch=Math.min(notch,85);
+  const dome=Math.min(95,Math.max(0,notch-32)*2.2),act=b.act/Math.max(.25,cvf);
+  let plat=b.plat*Math.pow(60/st.hr,.35)*(1+.06*cold);plat+=(9.5-st.Ca)*22;
+  plat*=name==='M'?1+.9*ikr:1+.45*ikr;
+  if(st.K<4)plat*=(1+.18*(4-st.K))*(name==='M'?1+.25*(4-st.K):1);else plat*=1-.05*(st.K-4);
+  if(isch)plat*=.7;if(st.dig)plat*=.85;plat-=.7*(act-b.act);plat=Math.max(30,plat)+dome;
+  let d3=b.d3*(st.K>4?Math.max(.45,1-.12*(st.K-4)):1+.22*(4-st.K))*(1+.5*ikr)*(1+.04*Math.max(0,cold));d3=Math.max(28,d3);
+  const Vpl=18-(isch?35:0)-(st.dig?(name==='endo'?14:8):0);
+  return{name,Vr,av,rel,cvf,Vpk,notch,dome,plat,d3,Vpl,act,apd:plat+d3*.9,isch}}
+function apV(L,t){/* t in ms from this layer's activation */if(t<0)return L.Vr;const up=1.2/Math.max(.2,L.rel);if(t<up)return L.Vr+(L.Vpk-L.Vr)*t/up;
+  const Vn=Math.max(-28,L.Vpk-L.notch*1.3),tt=t-up;if(tt<L.dome+8){const nn=Math.min(1,tt/6);let v=L.Vpk+(Vn-L.Vpk)*nn;return v}
+  const t2=tt-L.dome-8,dRise=22;let v;if(t2<dRise)v=Vn+(L.Vpl+4-Vn)*(1-Math.exp(-t2/7));else v=L.Vpl+4-6*(t2-dRise)/Math.max(1,L.plat);
+  const t3=t-L.plat;if(t3>0){const u=t3/L.d3,f=1/(1+Math.exp(9*(u-.55))),f0=1/(1+Math.exp(-4.95));return L.Vr+(v-L.Vr)*Math.min(1,f/f0)}return v}
+function apModel(st){const Ls={endo:apLayer('endo',st),M:apLayer('M',st),epi:apLayer('epi',st)},T0=-40,T1=Math.max(620,Ls.M.act+Ls.M.plat+Ls.M.d3*1.6+40),n=Math.round(T1-T0);
+  const V={endo:new Float32Array(n),M:new Float32Array(n),epi:new Float32Array(n)},E=new Float32Array(n);
+  for(let i=0;i<n;i++){const t=T0+i;for(const k of['endo','M','epi'])V[k][i]=apV(Ls[k],t-Ls[k].act);E[i]=(.55*(V.endo[i]-V.M[i])+(V.M[i]-V.epi[i]))/95}
+  const disp=(Ls.M.act+Ls.M.apd)-(Ls.epi.act+Ls.epi.apd);let jw=0;for(let t=Ls.epi.act+3;t<Ls.epi.act+50;t++)jw=Math.max(jw,E[Math.round(t-T0)]-E[0]);
+  return{Ls,V,E,T0,n,disp,jw,ead:(Ls.M.act+Ls.M.apd>470)||disp>140}}
+/* map the cellular state onto the full 12-lead generator */
+function apMorph(st){const m=apModel(st),L=m.Ls,cvf=L.epi.cvf,Vr=ghk(st.K),avA=naAvail(Vr,-75)*(1-st.na),pa=Math.max(.05,Math.pow(Math.min(1,avA/naAvail(ghk(4),-75)),2.2)),
+  s=clamp(1/Math.max(.35,cvf),1,2.6),qt=clamp(.08+(L.M.act+L.M.apd)/1000*1.02,.22,.8),d3n=75,tw=clamp(L.epi.d3/d3n,.4,2.2),
+  tA=clamp(.42*Math.pow(1/tw,.7)*(st.K<3.6?Math.max(.2,1-(3.6-st.K)*.6):1),.05,1.3),uA=Math.max(0,(L.M.apd-L.epi.apd-60)/100)*.12+(st.K<3.5?(3.5-st.K)*.13:0),
+  xst=[],xq=[],loc=[];let stA=0,std=null;
+  if(m.jw>.18&&!st.brug)xst.push({c:.09*s+.012,wl:.012,wr:.025,A:clamp((m.jw-.15)*.9,.05,.5),d:fv(55,-.15)});
+  if(st.brug)loc.push({c:.094,wl:.008,wr:.085,A:.46,lm:{V1:1,V2:.9}},{c:.275,wl:.055,wr:.045,A:-.42,lm:{V1:1,V2:.8}});
+  if(st.isch==='trans'){stA=.3;std=nrm([.35,-.2,.9])}else if(st.isch==='sub'){stA=-.26;std=nrm([.6,.65,.25])}
+  if(st.dig)xst.push({c:.17,wl:.06,wr:.05,A:.17,d:neg(fv(55,-.25))});
+  if(st.na>.15)xq.push({c:.07*s+.02,wl:.016*s,A:.75*st.na,d:nrm([-.8,-.55,.2])});
+  const vm=V({axis:55,s,qt,tfix:1,twl:clamp(.068*Math.pow(tw,.8),.028,.14),twr:clamp(.042*tw,.025,.1),tA,td:fv(43,.6),uA:Math.min(.32,uA),stA,std,xst,xq,loc});
+  const pm=Pw('n',.15*pa).map(b=>({...b,wl:b.wl*(1+.6*(1-Math.sqrt(pa))),c:b.c*(1+.4*(1-Math.sqrt(pa)))})),pr=clamp(.15+(1/cvf-1)*.06+Math.max(0,37-st.temp)*.007+(st.dig?.04:0),.12,.32);
+  return{vm,pm,pr,model:m}}
+function apRecord(st,seed=31){const R=newRec(seed),{vm,pm,pr,model}=apMorph(st);R.opt.emg=st.temp<34?.03:.009;sinus(R,{hr:st.hr,pr,vm,pm});R.tm={vm,pm,pr};R.L=deriveLeads(R);R.ms=measure(R);R.meta.rhy='Sinus rhythm';computeMeta(R);R._c={};R.pid='aplab';R.model=model;return R}
+function apExplain(st,m){const L=m.Ls,o=[],Vr=ghk(st.K).toFixed(0),av=Math.round(L.epi.av*100);
+  if(st.K>=5.5)o.push(`<b>High K⁺ (${st.K} mmol/L)</b> moves the resting potential from −87 to ${Vr} mV, so only ${av}% of Na⁺ channels are available. Phase 0 is slower, conduction slows, and the QRS widens; atrial cells are more sensitive, so P waves flatten first. High K⁺ also raises IKr conductance, so phase 3 is faster and shorter: a narrow, peaked T.`);
+  if(st.K<=3.4)o.push(`<b>Low K⁺ (${st.K} mmol/L)</b> lowers IKr conductance, so phase 3 is slow and the action potential long, most of all in M cells and Purkinje fibers. The T flattens, late M-cell repolarization adds a U wave, the QU lengthens, and early afterdepolarizations become more likely.`);
+  if(st.Ca>=11)o.push(`<b>High Ca²⁺</b> shortens the plateau (phase 2) through faster Ca²⁺-dependent inactivation of L-type channels: the ST segment shortens, so the QT shortens while the T keeps its shape.`);
+  if(st.Ca<=8.4)o.push(`<b>Low Ca²⁺</b> lengthens the plateau: a long, flat ST segment and a long QT with a normal-looking T.`);
+  if(st.na>=.15)o.push(`<b>Na⁺-channel block (${Math.round(st.na*100)}%)</b> slows phase 0 at every resting potential: wide QRS, and with drugs like TCAs a rightward terminal QRS (tall R in aVR). Less inward Na⁺ also leaves Ito unopposed, deepening the epicardial notch, which is how these drugs unmask Brugada.`);
+  if(st.ikr>=.15)o.push(`<b>IKr block (${Math.round(st.ikr*100)}%)</b> delays phase 3, most in M cells, so the QT lengthens and transmural dispersion grows to ${Math.round(m.disp)} ms.${st.Mg<1.6?' Low Mg²⁺ amplifies this.':''}${m.ead?' <b>Early afterdepolarizations are likely: substrate for torsades.</b>':''}`);
+  if(st.ito>=1.4&&!st.brug)o.push(`<b>Larger Ito</b> deepens the phase 1 notch in epicardium more than endocardium. During that notch the wall carries a voltage gradient, written as a J (Osborn) wave.`);
+  if(st.brug)o.push(`<b>Brugada substrate:</b> in right-ventricular outflow epicardium a very large Ito notch with reduced Na⁺ current delays the dome. Endocardium is depolarized while epicardium is still notched, so the ST is coved upward in V1–V2; the delayed epicardial repolarization then inverts the T.`);
+  if(st.temp<=34)o.push(`<b>Hypothermia (${st.temp} °C)</b> slows every channel: longer PR, QRS and QT, and a bigger Ito notch, producing Osborn waves. Shivering adds muscle artifact.`);
+  if(st.isch==='trans')o.push(`<b>Transmural (epicardial) ischemia:</b> injured cells lose K⁺ (resting potential rises toward ${ghk(st.K,5).toFixed(0)} mV) and open K-ATP channels (lower, shorter plateau). Current flows between healthy and injured tissue in diastole and systole, so the ST segment rises in leads facing the injury and falls in leads facing away.`);
+  if(st.isch==='sub')o.push(`<b>Subendocardial ischemia:</b> the same injury, but on the inner layer, so the gradient points away from the surface: ST depression in the leads over the wall. It does not localize the artery, and aVR often shows reciprocal elevation.`);
+  if(st.dig)o.push(`<b>Digoxin</b> blocks Na⁺/K⁺-ATPase, raising intracellular Na⁺ and Ca²⁺: shorter plateau, sagging ST, short QT. In toxicity, Ca²⁺ overload triggers delayed afterdepolarizations (ectopy, bidirectional VT); vagal effects slow the AV node.`);
+  if(st.hr>=100)o.push(`<b>Faster rate</b> shortens action potentials (restitution), so the QT shortens.`);
+  if(!o.length)o.push('Normal: resting potential about −87 mV, full Na⁺-channel availability, epicardium repolarizing first. That transmural order is why the T wave points the same way as the QRS.');
+  return o}
+function buildApLab(host,opt={}){const st={...AP0,...(opt.state||{})};
+  const c=el('div','card stack',`<div class="row" style="justify-content:space-between"><h2>Action potential lab: from ion channels to the ECG</h2><span class="lbl">Schematic model</span></div>
+   <p style="max-width:88ch">Three layers of ventricular wall: endocardium, mid-myocardium (M cells) and epicardium. Their action potentials differ in Ito (phase 1 notch) and in duration. The ECG is the voltage <i>difference</i> across the wall: activation spreads from endocardium to epicardium (QRS), and the epicardium repolarizes first, so the T wave is upright. Change the ions and channels, then watch the cells, the wedge ECG and the full 12-lead.</p>
+   <div class="row" id="apPre"></div><div class="aplab"><div class="stack" id="apS" style="gap:6px"></div><div><table class="mt" id="apR"></table></div></div>
+   <div class="vwrap"><div id="apC1"></div></div><div class="vwrap"><div id="apC2"></div></div><ul class="f" id="apTx"></ul><h3>The same cells on the 12-lead</h3><div id="apV"></div>`);host.appendChild(c);
+  const sl={};const add=(k,l,o)=>{sl[k]=slider($('#apS',c),l,o,v=>{st[k]=v;upd()})};
+  add('K','K⁺ (mmol/L)',{min:1.8,max:9.5,step:.1,val:st.K,fmt:v=>v.toFixed(1)});add('Ca','Ca²⁺ total (mg/dL)',{min:5.5,max:15,step:.1,val:st.Ca,fmt:v=>v.toFixed(1)});add('Mg','Mg²⁺ (mg/dL)',{min:.8,max:3.5,step:.1,val:st.Mg,fmt:v=>v.toFixed(1)});
+  add('na','Na⁺-channel block',{min:0,max:.8,step:.05,val:st.na,fmt:v=>Math.round(v*100)+'%'});add('ikr','IKr (hERG) block',{min:0,max:.8,step:.05,val:st.ikr,fmt:v=>Math.round(v*100)+'%'});add('ito','Ito (notch current)',{min:.3,max:3,step:.1,val:st.ito,fmt:v=>'× '+v.toFixed(1)});
+  add('temp','Temperature (°C)',{min:26,max:39,step:.5,val:st.temp,fmt:v=>v.toFixed(1)});add('hr','Heart rate (/min)',{min:35,max:160,step:1,val:st.hr,fmt:v=>Math.round(v)});
+  const r2=el('div','row');$('#apS',c).appendChild(r2);const isg=segment(r2,[['none','No ischemia'],['sub','Subendocardial'],['trans','Transmural']],st.isch,v=>{st.isch=v;upd()});
+  const dg=el('input');dg.type='checkbox';dg.checked=st.dig;dg.id='apDig';dg.addEventListener('change',()=>{st.dig=dg.checked;upd()});const dl=el('label','row lbl','Digoxin');dl.style.cssText='gap:6px;text-transform:none;letter-spacing:0';dl.prepend(dg);r2.appendChild(dl);
+  const bg=el('input');bg.type='checkbox';bg.checked=st.brug;bg.id='apBrug';bg.addEventListener('change',()=>{st.brug=bg.checked;upd()});const bl=el('label','row lbl','RV outflow epicardium (Brugada substrate)');bl.style.cssText='gap:6px;text-transform:none;letter-spacing:0';bl.prepend(bg);r2.appendChild(bl);
+  APPRESET.forEach(([t,o])=>{const b=el('button','chip',t);b.type='button';b.addEventListener('click',()=>{Object.assign(st,AP0,o);Object.keys(sl).forEach(k=>sl[k].set(st[k]));dg.checked=st.dig;bg.checked=st.brug;$$('button',isg).forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===st.isch)));$$('#apPre .chip',c).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));upd()});$('#apPre',c).appendChild(b)});
+  const c1=mkCanvas($('#apC1',c),250),c2=mkCanvas($('#apC2',c),150),vw=Viewer($('#apV',c),{foot:'Generated from the cellular state above. Drag to measure.'});let m=null,tm=0;
+  function draw(){if(!m)return;const S=cvSetup(c1);if(S){const{g,w,h,C}=S,ml=46,mr=10,mt=10,mb=22,pw=w-ml-mr,ph=h-mt-mb,X=t=>ml+(t-m.T0)/m.n*pw,Y=v=>mt+(45-v)/145*ph,cols={endo:C.accent,M:'#8a5bd0',epi:C.mark};
+      g.font='10.5px '+C.mono;g.fillStyle=C.muted;g.strokeStyle=C.grid;g.lineWidth=1;[40,0,-40,-80].forEach(v=>{g.beginPath();g.moveTo(ml,Y(v)+.5);g.lineTo(w-mr,Y(v)+.5);g.stroke();g.textAlign='right';g.fillText(v+' mV',ml-4,Y(v)+4)});
+      for(let t=0;t<m.T0+m.n;t+=100){g.beginPath();g.moveTo(X(t)+.5,mt);g.lineTo(X(t)+.5,mt+ph);g.stroke();g.textAlign='center';g.fillText(t+' ms',X(t),h-6)}
+      ['endo','M','epi'].forEach(k=>{g.strokeStyle=cols[k];g.lineWidth=2;g.beginPath();for(let i=0;i<m.n;i++){const x=X(m.T0+i),y=Y(m.V[k][i]);i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke()});
+      const L=m.Ls.epi,lab=(t,v,s)=>{g.fillStyle=C.ink;g.font='600 11px '+C.ui;g.textAlign='center';g.fillText(s,X(t),Y(v)-6)};lab(L.act+1,L.Vpk+8,'0');lab(L.act+6+L.dome/2,L.Vpk-L.notch*1.2+2,'1');lab(L.act+L.plat*.6,L.Vpl+12,'2');lab(L.act+L.plat+L.d3*.45,-25,'3');lab(L.act+L.plat+L.d3*1.4,L.Vr+12,'4');
+      let lx=w-mr-330;[['Endocardium','endo'],['M cells','M'],['Epicardium','epi']].forEach(([t,k])=>{g.fillStyle=cols[k];g.fillRect(lx,mt+ph-30,14,4);g.fillStyle=C.ink;g.font='11px '+C.ui;g.textAlign='left';g.fillText(t,lx+18,mt+ph-24);lx+=g.measureText(t).width+34})}
+    const S2=cvSetup(c2);if(S2){const{g,w,h,C}=S2,ml=46,mr=10,pw=w-ml-mr,X=t=>ml+(t-m.T0)/m.n*pw,base=h*.62,k=h*.42/Math.max(.6,...Array.from(m.E).map(Math.abs)),E=m.E;
+      g.fillStyle=C.paper;g.fillRect(ml,0,pw,h);g.strokeStyle=C.gmin;g.lineWidth=1;for(let x=ml;x<w-mr;x+=8){g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,h);g.stroke()}g.strokeStyle=C.gmaj;g.beginPath();g.moveTo(ml,Math.round(base)+.5);g.lineTo(w-mr,Math.round(base)+.5);g.stroke();
+      g.strokeStyle=C.trace;g.lineWidth=2;g.beginPath();for(let i=0;i<m.n;i++){const x=X(m.T0+i),y=base-E[i]*k;i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();
+      g.fillStyle=C.muted;g.font='11px '+C.ui;g.textAlign='left';g.fillText('Transmural (wedge) ECG = endocardium − epicardium voltage, weighted through the M cells',ml+6,14);
+      let ti=0,tv=-9,ti2=0,tv2=9;const st0=Math.round(m.Ls.epi.act+60-m.T0);for(let i=st0;i<m.n;i++){if(E[i]>tv){tv=E[i];ti=i}if(E[i]<tv2){tv2=E[i];ti2=i}}
+      const lab=(i,s,dy)=>{g.fillStyle=C.mark;g.font='600 11px '+C.ui;g.textAlign='center';g.fillText(s,X(m.T0+i),base-E[i]*k+dy)};lab(Math.round(m.Ls.M.act+4-m.T0),'QRS',-8);if(m.jw>.12)lab(Math.round(m.Ls.epi.act+12-m.T0),'J',-8);lab(Math.round(m.Ls.epi.act+m.Ls.epi.plat*.5-m.T0),'ST',-10);if(Math.abs(tv)>Math.abs(tv2))lab(ti,'T',-8);else lab(ti2,'T',18)}}
+  function upd(){m=apModel(st);const L=m.Ls,row=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
+    $('#apR',c).innerHTML=`<tbody>${row('Resting',`${L.endo.Vr.toFixed(0)} mV (E<sub>K</sub> ${(61.5*Math.log10(st.K/140)).toFixed(0)})`)}${row('Na⁺ avail.',Math.round(L.endo.av*100)+'%')}${row('Conduction',Math.round(L.epi.cvf*100)+'% of normal')}${row('APD endo/M/epi',`${Math.round(L.endo.apd)} / ${Math.round(L.M.apd)} / ${Math.round(L.epi.apd)} ms`)}${row('Dispersion',Math.round(m.disp)+' ms'+(m.ead?' <b style="color:var(--bad)">EAD risk</b>':''))}</tbody>`;
+    $('#apTx',c).innerHTML=apExplain(st,m).map(x=>`<li>${x}</li>`).join('');draw();clearTimeout(tm);tm=setTimeout(()=>{const R=apRecord(st);vw.setRec(R);const M=R.meta;$('#apR tbody',c).insertAdjacentHTML('beforeend',`<tr><td>12-lead</td><td>PR ${M.pr} · QRS ${M.qrs} · QT ${M.qt} (QTc ${M.qtcB}) ms</td></tr>`)},90)}
+  upd();return{draw:()=>{draw();vw.draw()},set:o=>{Object.assign(st,AP0,o);Object.keys(sl).forEach(k=>sl[k].set(st[k]));dg.checked=st.dig;bg.checked=st.brug;upd()}}}
+
+/* ============ mechanism lab: conduction system animator ============ */
+const CONDMODES=[['nsr','Normal sinus'],['avb1','First-degree block'],['wenck','Mobitz I'],['mob2','Mobitz II'],['avb3','Complete block'],['rbbb','RBBB'],['lbbb','LBBB'],['lafb','LAFB'],['wpw','WPW'],['pac','PAC'],['junct','Junctional'],['svt','AVNRT'],['flutter','Atrial flutter'],['af','Atrial fibrillation'],['pvc','PVC'],['vt','Ventricular tachycardia'],['vpace','Paced']];
+const CONDTXT={nsr:'The SA node fires (automaticity: phase 4 depolarization through If channels). Atrial muscle conducts quickly (P wave). The AV node conducts slowly because its upstroke depends on Ca²⁺ channels, not Na⁺: that delay is the PR segment and lets the atria finish filling the ventricles. His–Purkinje fibers conduct fast (Na⁺-dependent) and activate the septum left-to-right first, then both ventricles from endocardium outward (QRS).',
+ avb1:'Same sequence, but the AV node conducts more slowly (vagal tone, AV-nodal drugs, ischemia): a long PR with every impulse still arriving.',
+ wenck:'Decremental conduction: each impulse reaches the AV node earlier in its recovery, so it conducts a little more slowly, until one fails. The pause lets the node recover. This is a property of Ca²⁺-dependent nodal tissue.',
+ mob2:'His–Purkinje tissue is all-or-none (Na⁺-dependent): it conducts at a fixed speed or not at all. Diseased infranodal tissue drops beats suddenly with no PR warning, and the QRS is often already wide.',
+ avb3:'Nothing crosses. The atria follow the SA node; the ventricles follow the fastest surviving subsidiary pacemaker: junctional (40–60, narrow) or ventricular (20–40, wide). Lower pacemakers have slower phase 4 depolarization.',
+ rbbb:'The right bundle fails. The left side activates normally, then the impulse crosses the septum muscle-to-muscle (slowly) to reach the right ventricle late. Those late, unopposed rightward-anterior forces write R′ in V1 and wide S in I and V6.',
+ lbbb:'The left bundle fails. The septum activates right-to-left (no septal q in I and V6), and the left ventricle is reached late through muscle: a broad, notched R in the lateral leads and deep S in V1.',
+ lafb:'The anterior fascicle fails. The left ventricle is activated first through the posterior fascicle (inferior), then upward and leftward late: left axis deviation, qR in aVL and rS inferiorly.',
+ wpw:'An accessory pathway (here left lateral) is fast muscle tissue without decremental delay. It reaches the ventricle before the AV node does: short PR and a slurred delta wave, then fusion with normal activation.',
+ pac:'An irritable atrial focus fires early, so the P wave has a different shape. The impulse resets the SA node, so the next beat is not fully compensated.',
+ junct:'The SA node is quiet or slow; the AV junction takes over at its intrinsic 40–60/min. Atria are activated backward (retrograde P, inverted in II, III, aVF) at the same time as the ventricles.',
+ svt:'AV-nodal re-entry: two pathways in the node (slow and fast) form a circuit. The impulse circles, sending a wave down to the ventricles and up to the atria at the same moment, so the P hides at the end of the QRS.',
+ flutter:'A macro-reentrant wave circles the right atrium around the tricuspid annulus about 300 times a minute. The AV node lets every second (or fourth) wave through, protecting the ventricles.',
+ af:'Many wavelets wander chaotically through both atria at 350–600/min. The AV node receives impulses at random and conducts some of them: an irregularly irregular ventricular response.',
+ pvc:'A ventricular focus fires early and spreads muscle-to-muscle rather than through Purkinje fibers: slow, wide, bizarre QRS with discordant ST-T. The sinus P still fires on time but meets refractory tissue.',
+ vt:'A re-entrant circuit around ventricular scar drives the ventricles fast. The atria keep their own rhythm (AV dissociation); a well-timed sinus impulse can occasionally capture the ventricles through the normal system.',
+ vpace:'A pacing lead in the right ventricle delivers the stimulus. Activation spreads from the RV apex through muscle: wide, LBBB-like QRS with a superior axis.'};
+function condIntervals(R){const id=R.pid,I=[],add=(k,a,b,kind='d')=>I.push({k,a,b,kind});const qd=q=>q.m&&q.m.qrsd?q.m.qrsd:.1,qtt=q=>q.m&&q.m.qt?q.m.qt:.38;
+  R.ev.p.forEach((p,i)=>{if(id==='af')return;const ect=p.k&&p.k!=='s'&&p.k!=='r';if(p.k==='r'){add('RA',p.t,p.t+.07);add('LA',p.t+.02,p.t+.09);return}
+    if(!ect&&id!=='flutter')add('SA',p.t-.015,p.t+.01);if(ect&&id!=='flutter')add('AF',p.t-.01,p.t+.02);add('RA',p.t,p.t+.07);add('LA',p.t+.03,p.t+.1);
+    const q=R.ev.q.find(q=>q.from===i);if(q){add('AVN',p.t+.05,q.t-.045);if(id==='wpw'){add('AP',p.t+.04,q.t+.005)}add('HIS',q.t-.045,q.t-.03)}
+    else if(R.meta.prq!=='none'){const blkHis=id==='mob2'||(id==='avb21'&&R.tm&&R.tm.vm.qrsd>.12);add('AVN',p.t+.05,p.t+(blkHis?.15:.22));if(blkHis)add('HIS',p.t+.15,p.t+.4,'b');else add('AVN',p.t+.2,p.t+.42,'b')}});
+  R.ev.q.forEach(q=>{const d=qd(q),qt=qtt(q),t=q.t;if(q.k==='s')return;
+    if(q.k==='v'){add('FOC',t-.01,t+.02);add('LV',t+.0,t+d);add('RV',t+.03,t+d);add('SEP',t+.03,t+d*.8);add('VREP',t+d,t+qt,'p');return}
+    if(q.k==='p'){add('PACE',t-.005,t+.01);add('RV',t,t+d*.8);add('SEP',t+.03,t+d*.85);add('LV',t+.04,t+d);add('VREP',t+d,t+qt,'p');return}
+    if(q.from==null&&!['af','flutter','svt','junct'].includes(id)&&id!=='avb3'){}
+    if(id==='svt')add('LOOP',t-.06,t+.02);
+    if(q.from==null&&['junct','avb3','svt','flutter','af'].includes(id)){add('AVN',t-.05,t-.04);add('HIS',t-.04,t-.03)}
+    if(id==='junct'||id==='svt'){add('RA',t+.0,t+.06);add('LA',t+.02,t+.08)}
+    const rb=id!=='rbbb'&&id!=='mob2'&&id!=='bifasc',lb=id!=='lbbb',laf=lb&&id!=='lafb'&&id!=='bifasc',lpf=lb&&id!=='lpfb';
+    if(rb)add('RBB',t-.03,t);else add('RBB',t-.03,t+d,'b');if(lb){add('LBB',t-.03,t-.012);if(laf)add('LAF',t-.015,t+.01);else add('LAF',t-.015,t+d,'b');if(lpf)add('LPF',t-.015,t+.01);else add('LPF',t-.015,t+d,'b')}else add('LBB',t-.03,t+d,'b');
+    add('PK',t-.01,t+.035);
+    if(id==='wpw'){add('LVL',t,t+.05);add('SEP',t+.03,t+.06);add('LV',t+.03,t+d);add('RV',t+.035,t+d*.85)}
+    else if(id==='lbbb'){add('SEP',t,t+.05);add('RV',t+.01,t+.05);add('LV',t+.05,t+d)}
+    else if(!rb){add('SEP',t,t+.025);add('LV',t+.01,t+.07);add('RV',t+.06,t+d)}
+    else if(!laf){add('SEP',t,t+.025);add('LV',t+.015,t+.05);add('LVS',t+.05,t+d);add('RV',t+.015,t+.06)}
+    else{add('SEP',t,t+.025);add('LV',t+.015,t+d);add('RV',t+.015,t+d*.8)}
+    add('VREP',t+d,t+qt,'p')});
+  return I}
+function buildCondLab(host){const st={id:'nsr',rate:.35,t:0,play:true,rec:null,I:[],last:0};
+  const c=el('div','card stack',`<div class="row" style="justify-content:space-between"><h2>Conduction system: where the impulse is, beat by beat</h2><div class="row" id="cdCtl"></div></div>
+   <div class="row" id="cdModes"></div><div class="lead2"><div><svg id="cdSvg" viewBox="0 0 400 360" role="img" aria-label="Heart conduction system" style="width:100%;max-width:440px;display:block;margin:auto"></svg><div class="row" style="gap:6px 14px;justify-content:center;font-size:12px" id="cdLeg"></div></div><div class="stack" style="gap:10px;min-width:0"><p id="cdTx"></p><div class="note" id="cdNow"></div></div></div>
+   <div class="vwrap" style="position:relative"><div class="vscroll" id="cdStrip" style="position:relative"></div></div>`);host.appendChild(c);
+  const ctl=$('#cdCtl',c),pb=el('button','btn small','Pause');pb.type='button';pb.addEventListener('click',()=>{st.play=!st.play;pb.textContent=st.play?'Pause':'Play';st.last=performance.now()});ctl.appendChild(pb);
+  segment(ctl,[['.15','0.15×'],['.35','0.35×'],['1','1×']],'.35',v=>st.rate=+v);
+  CONDMODES.forEach(([k,t])=>{const b=el('button','chip',t);b.type='button';b.setAttribute('aria-pressed',String(k===st.id));b.addEventListener('click',()=>{st.id=k;$$('#cdModes .chip',c).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));load()});$('#cdModes',c).appendChild(b)});
+  $('#cdLeg',c).innerHTML=[['var(--accent)','Depolarizing'],['color-mix(in srgb,var(--accent) 30%,var(--soft))','Plateau / refractory'],['var(--bad)','Blocked']].map(([col,t])=>`<span><i class="dot" style="background:${col}"></i>${t}</span>`).join('');
+  const cv=el('canvas');$('#cdStrip',c).appendChild(cv);const cur=el('div','cdcur');$('#cdStrip',c).appendChild(cur);let geo=null;
+  $('#cdStrip',c).addEventListener('pointerdown',e=>{if(!geo)return;const b=cv.getBoundingClientRect();st.t=clamp(((e.clientX-b.left)/geo.pm-geo.LM)/geo.s,0,DUR)});
+  const svg=$('#cdSvg',c);
+  svg.innerHTML=`<g id="cdBase" stroke="var(--muted)" stroke-width="1.5">
+   <path id="r-RA" d="M70 120 C60 70 110 45 160 55 C200 62 205 110 195 150 C170 172 110 175 82 155 Z"/>
+   <path id="r-LA" d="M210 70 C230 40 300 40 330 70 C345 95 330 140 300 150 C260 158 215 150 210 130 Z"/>
+   <path id="r-RV" d="M85 175 C110 170 175 172 200 178 L208 315 C180 330 130 300 105 260 C90 235 82 200 85 175 Z"/>
+   <path id="r-LV" d="M212 178 C250 170 320 168 335 185 C350 240 300 320 230 335 L212 320 Z"/>
+   <path id="r-LVS" d="M235 182 C270 176 315 175 330 188 C334 205 333 220 328 232 L240 215 Z" stroke="none"/>
+   <path id="r-LVL" d="M300 172 C320 172 335 180 338 196 C340 225 332 250 318 265 L298 235 Z" stroke="none"/>
+   <path id="r-SEP" d="M198 178 L214 178 L218 318 L206 322 Z"/></g>
+   <g id="cdCond" fill="none" stroke-linecap="round">
+   <circle id="r-SA" cx="105" cy="64" r="9"/><circle id="r-AF" cx="280" cy="62" r="7"/><ellipse id="r-AVN" cx="203" cy="163" rx="12" ry="8"/>
+   <path id="r-HIS" d="M204 171 L206 196" stroke-width="5"/><path id="r-RBB" d="M204 196 L196 255 L180 296 L160 302" stroke-width="4"/>
+   <path id="r-LBB" d="M208 196 L218 214" stroke-width="5"/><path id="r-LAF" d="M218 214 L255 228 L292 214" stroke-width="4"/><path id="r-LPF" d="M218 214 L238 268 L268 300" stroke-width="4"/>
+   <path id="r-PK" d="M160 302 L140 285 M160 302 L150 318 M292 214 L312 232 M292 214 L305 195 M268 300 L295 292 M268 300 L262 320" stroke-width="2"/>
+   <path id="r-AP" d="M318 140 L322 176" stroke-width="5"/><circle id="r-FOC" cx="285" cy="282" r="9"/><circle id="r-PACE" cx="150" cy="298" r="7"/>
+   <ellipse id="r-LOOP" cx="203" cy="163" rx="20" ry="13" stroke-dasharray="4 3" stroke-width="2.5"/><ellipse id="r-FLUT" cx="140" cy="135" rx="42" ry="26" stroke-dasharray="6 4" stroke-width="2.5"/><circle id="r-FDOT" r="6"/>
+   </g><g font-family="var(--font-ui)" font-size="11" fill="var(--muted)"><text x="40" y="40">SA node</text><text x="222" y="160">AV node</text><text x="210" y="205" text-anchor="start" dx="12">His</text><text x="96" y="110">RA</text><text x="282" y="110">LA</text><text x="120" y="240">RV</text><text x="272" y="262">LV</text><text x="118" y="322">RBB</text><text x="296" y="210">LAF</text><text x="240" y="314">LPF</text></g>`;
+  function load(){st.rec=generate(st.id,4242+CONDMODES.findIndex(m=>m[0]===st.id));st.I=condIntervals(st.rec);st.t=0;$('#cdTx',c).innerHTML=`<b>${CONDMODES.find(m=>m[0]===st.id)[1]}.</b> ${CONDTXT[st.id]}`;drawS()}
+  function drawS(){const d=stripLead(st.rec,'II');geo=drawStrip(cv,[{data:d,label:'II'}],{t0:0,dur:DUR,rowMM:26,foot:'Tap the strip to jump'})}
+  const show=(id,on)=>{const e=$('#r-'+id,svg);if(e)e.style.display=on?'':'none'};
+  function paint(){const C=cssx(),t=st.t,act={},blk={};st.I.forEach(iv=>{if(t>=iv.a&&t<=iv.b){if(iv.kind==='b')blk[iv.k]=1;else act[iv.k]=Math.max(act[iv.k]||0,iv.kind==='p'?.3:1)}});
+    const vrep=act.VREP;if(st.id!=='lafb'&&act.LV)act.LVS=Math.max(act.LVS||0,act.LV);if(act.LV)act.LVL=Math.max(act.LVL||0,act.LV);['RA','LA','RV','LV','SEP','LVS','LVL'].forEach(k=>{const e=$('#r-'+k,svg);let a=act[k]||((['RV','LV','SEP','LVS','LVL'].includes(k)&&vrep)?.28:0);if(st.id==='af'&&(k==='RA'||k==='LA'))a=.25+.55*Math.abs(Math.sin(t*37+(k==='LA'?1.7:0))*Math.sin(t*23.3));e.style.fill=a?`color-mix(in srgb,var(--accent) ${Math.round(a*85)}%,var(--soft))`:'var(--soft)';e.style.stroke=k==='LVS'||k==='LVL'?'none':'var(--muted)'});
+    ['SA','AF','AVN','HIS','RBB','LBB','LAF','LPF','PK','AP','FOC','PACE','LOOP'].forEach(k=>{const e=$('#r-'+k,svg),on=act[k],b=blk[k],isC=e.tagName==='circle'||e.tagName==='ellipse';e.style.stroke=b?'var(--bad)':on?'var(--accent)':'var(--muted)';if(isC&&k!=='LOOP')e.style.fill=b?'var(--bad)':on?'var(--accent)':'var(--panel)';e.style.opacity=on||b?1:.55});
+    show('AP',st.id==='wpw');show('FOC',['pvc','vt'].includes(st.id));show('PACE',st.id==='vpace');show('LOOP',st.id==='svt');show('FLUT',st.id==='flutter');show('FDOT',st.id==='flutter');show('AF',['pac'].includes(st.id));
+    if(st.id==='flutter'){const per=60/(st.rec.meta.arate||300),ph=(t%per)/per*2*Math.PI,e=$('#r-FDOT',svg);e.setAttribute('cx',140+42*Math.cos(-ph));e.setAttribute('cy',135+26*Math.sin(-ph));e.style.fill='var(--accent)';$('#r-FLUT',svg).style.stroke='var(--accent)'}
+    if(geo){cur.style.transform=`translateX(${geo.X(t)}px)`;cur.style.height=geo.H+'px'}
+    const now=Object.keys(act).filter(k=>act[k]===1),names={SA:'SA node',AF:'ectopic atrial focus',RA:'right atrium',LA:'left atrium',AVN:'AV node',HIS:'His bundle',RBB:'right bundle',LBB:'left bundle',LAF:'anterior fascicle',LPF:'posterior fascicle',PK:'Purkinje fibers',SEP:'septum',RV:'right ventricle',LV:'left ventricle',LVS:'superior LV wall',LVL:'lateral LV wall',AP:'accessory pathway',FOC:'ventricular focus',PACE:'pacing lead',LOOP:'re-entry circuit in the AV node'};
+    $('#cdNow',c).innerHTML=`<b>${t.toFixed(2)} s:</b> ${now.length?'depolarizing: '+now.map(k=>names[k]).filter(Boolean).join(', '):act.VREP?'ventricles repolarizing (ST–T)':'electrical diastole'}${Object.keys(blk).length?' · <b style="color:var(--bad)">blocked at '+Object.keys(blk).map(k=>names[k]).join(', ')+'</b>':''}`}
+  function loop(now){if(!c.isConnected)return;if(c.offsetParent!==null){if(st.play){const dt=Math.min(.05,(now-(st.last||now))/1000);st.t+=dt*st.rate;if(st.t>DUR)st.t=0}paint()}st.last=now;requestAnimationFrame(loop)}
+  load();requestAnimationFrame(loop);return{draw:()=>{drawS();paint()}}}
+
+/* ============ mechanism lab: coronary anatomy, occlusion and evolution ============ */
+/* 17-segment LV model: each segment has an outward normal in body coordinates (x left, y inferior, z anterior).
+   Transmural injury makes the injury current point toward the injured epicardium, so the ST vector is the sum
+   of the injured segments' normals; leads facing it show elevation, leads facing away show reciprocal depression. */
+const LVAX=nrm([.6,.45,.65]);
+const SEG=(()=>{const T={1:['Basal anterior',[.25,-.45,.85]],2:['Basal anteroseptal',[-.35,-.25,.9]],3:['Basal inferoseptal',[-.5,.7,-.1]],4:['Basal inferior',[.05,.85,-.5]],5:['Basal inferolateral',[.45,.2,-.85]],6:['Basal anterolateral',[.75,-.55,.2]],
+  7:['Mid anterior',[.3,-.15,.95]],8:['Mid anteroseptal',[-.3,0,.95]],9:['Mid inferoseptal',[-.45,.8,.1]],10:['Mid inferior',[.1,.95,-.3]],11:['Mid inferolateral',[.65,.25,-.7]],12:['Mid anterolateral',[.9,-.25,.3]],
+  13:['Apical anterior',[.35,.1,.95]],14:['Apical septal',[-.15,.3,.95]],15:['Apical inferior',[.3,.9,.3]],16:['Apical lateral',[.9,.15,.4]],17:['Apex',[.6,.45,.65]],RV:['RV free wall',[-.85,.2,.5]]},o={};
+  for(const k in T)o[k]={name:T[k][0],n:nrm(T[k][1])};return o})();
+const OCC={
+ LM:{name:'Left main (total)',segs:[1,2,7,8,13,14,17,5,6,11,12,16],note:'Total left main occlusion is usually fatal before arrival. Survivors more often have subtotal disease, which shows diffuse subendocardial ischemia: widespread ST depression with ST elevation in aVR.'},
+ pLAD:{name:'Proximal LAD (before S1 and D1)',segs:[1,2,7,8,13,14,17,6,12,16],note:'Anterior wall, septum and the first diagonal’s high lateral territory: elevation in V1–V4 plus I and aVL, with reciprocal depression in III and aVF.'},
+ mLAD:{name:'Mid LAD (after D1)',segs:[7,8,13,14,17],note:'Spares the basal septum and the first diagonal: elevation in V2–V4, little in I or aVL, and no inferior reciprocity.'},
+ dLAD:{name:'Distal LAD',segs:[13,14,16,17],note:'Apical segments only: elevation in V3–V6, smaller amplitude.'},
+ D1:{name:'First diagonal',segs:[6,12,1],note:'High lateral wall: elevation in I, aVL and often V2 (the “South African flag”), with depression in III.'},
+ pLCx:{name:'Proximal circumflex',segs:[5,6,11,12,16],note:'Lateral and posterolateral walls: often subtle. Look for small elevation in I, aVL, V5–V6 and ST depression in V1–V3 (posterior). Record V7–V9.'},
+ OM:{name:'Obtuse marginal',segs:[11,12,5],note:'Mid lateral and posterolateral wall: lateral elevation, posterior depression in V1–V3; easy to miss.'},
+ pRCA:{name:'Proximal RCA (before RV branch)',segs:[3,4,9,10,15,'RV'],note:'Inferior wall plus the right ventricle: elevation III > II, reciprocal depression in aVL and I, elevation in V1 and V4R. Preload dependent: avoid nitrates.'},
+ mRCA:{name:'Mid RCA (after RV branch)',segs:[3,4,9,10,15],note:'Inferior wall without RV: elevation III > II with aVL depression; V1 neutral.'},
+ dRCA:{name:'Distal RCA / PDA',segs:[4,10,15,3],note:'Smaller inferior infarct; posterolateral branches may add V5–V6 or posterior changes.'}};
+function occSegs(id,dom,wrap){let s=OCC[id].segs.slice();if(dom==='left'){if(id==='pLCx'||id==='OM')s=s.concat([3,4,9,10,15]);if(/RCA/.test(id))s=['RV']}
+  if(dom==='co'&&id==='pLCx')s=s.concat([4,10]);if(wrap&&/LAD/.test(id))s=s.concat([15,10]);return[...new Set(s)]}
+function injuryVec(segs){let v=[0,0,0];segs.forEach(k=>{const n=SEG[k].n,w=k==='RV'?1.6:k===17?.6:1;v=[v[0]+n[0]*w,v[1]+n[1]*w,v[2]+n[2]*w]});const m=Math.hypot(...v);return{d:nrm(v),m}}
+/* time course (minutes since occlusion; tr = minutes at reperfusion or null) */
+function occStage(tm,tr){const ramp=(x,a,b)=>clamp((x-a)/(b-a),0,1),pre=tr==null?tm:Math.min(tm,tr);
+  let st=ramp(pre,3,30)*(1-.65*ramp(pre,360,4320))*(1-.5*ramp(pre,4320,20160)),hyp=ramp(pre,2,12)*(1-ramp(pre,60,360)),q=ramp(pre,60,1080),tinv=ramp(pre,720,3600)*(1-.4*ramp(pre,20160,60000));
+  let label=tm<20?'Hyperacute':tm<360?'Acute':tm<2880?'Evolving':tm<20160?'Subacute':'Chronic';
+  if(tr!=null&&tm>tr){const dt=tm-tr;st*=Math.exp(-dt/45);hyp*=Math.exp(-dt/20);q=Math.min(1,q+.15*ramp(dt,0,600));tinv=Math.max(tinv,.95*(1-Math.exp(-dt/200)));label=dt<90?'Reperfusing':'Reperfused'}
+  return{st,hyp,q,tinv,label}}
+function corMorph(segs,s,qt=.4){const{d,m}=injuryVec(segs),size=clamp(m/3,.4,1.25),z=s;
+  const tN={c:qt-.097,wl:.068,wr:.042,A:.4,d:fv(43,.6)},t=[tN];if(z.hyp>.01)t.push({c:qt-.12,wl:.08,wr:.055,A:.45*z.hyp*size,d});if(z.tinv>.01)t.push({c:qt-.09,wl:.05,wr:.045,A:-.55*z.tinv*size,d});
+  return V({axis:55,qt,stA:.3*z.st*size,std:d,stra:.025,t,xq:z.q>.02?[{c:.022,wl:.012,A:.5*z.q*size,d:neg(d)}]:[]})}
+function corRecord(cfg,seed=77){const segs=occSegs(cfg.occ,cfg.dom,cfg.wrap),s=occStage(cfg.tm,cfg.tr),R=newRec(seed),hr=cfg.hr||76,vm=corMorph(segs,s,qtF(hr,.41)),pm=Pw('n',.15),pr=.16;
+  sinus(R,{hr,pr,vm,pm});R.tm={vm,pm,pr};R.L=deriveLeads(R);R.ms=measure(R);R.meta.rhy='Sinus rhythm';computeMeta(R);autoST(R);R._c={};R.pid='corlab';R.stage=s;R.segs=segs;return R}
+const corTime=[[0,'0 min'],[10,'10 min'],[30,'30 min'],[90,'90 min'],[360,'6 h'],[1080,'18 h'],[2880,'2 days'],[10080,'1 week'],[43200,'1 month']];
+function buildCorLab(host){const st={occ:'pRCA',dom:'right',wrap:false,ti:3,tr:null};
+  const c=el('div','card stack',`<div class="row" style="justify-content:space-between"><h2>Coronary occlusion lab: anatomy → territory → ST vector</h2><span class="lbl">Schematic model</span></div>
+   <p style="max-width:88ch">Choose an occlusion site. The myocardium downstream becomes transmurally ischemic; injured cells lose K⁺ and open K-ATP channels, so current flows toward the injured epicardium. The ST vector is the sum of the injured segments' outward directions: leads looking at it show elevation, leads looking from the opposite side show the same vector as reciprocal depression. Then move through time and decide whether to reperfuse.</p>
+   <div class="corg"><div><svg id="corTree" viewBox="0 0 360 340" role="img" aria-label="Coronary arteries; select an occlusion site" style="width:100%;max-width:400px;display:block;margin:auto"></svg><div class="row" id="corCtl" style="justify-content:center"></div></div>
+   <div class="stack" style="gap:8px;min-width:0"><svg id="corEye" viewBox="-1.25 -1.25 2.5 2.5" role="img" aria-label="17-segment bullseye of the left ventricle" style="width:100%;max-width:240px;display:block;margin:auto"></svg><div class="row" style="justify-content:center;font-size:12px;gap:6px 14px"><span><i class="dot" style="background:var(--bad)"></i>Injured</span><span>Anterior at top, septum left</span></div></div></div>
+   <div id="corTS" class="stack" style="gap:6px"></div><div class="row" id="corRep"></div><p id="corTx" class="note"></p><div id="corV"></div>`);host.appendChild(c);
+  const tsl=slider($('#corTS',c),'Time since occlusion',{min:0,max:corTime.length-1,step:1,val:st.ti,fmt:v=>corTime[Math.round(v)][1]},v=>{st.ti=Math.round(v);upd()});
+  const rp=el('select');[['none','No reperfusion'],['60','Reperfused at 60 min'],['180','Reperfused at 3 h'],['720','Reperfused at 12 h']].forEach(([v,t])=>rp.appendChild(new Option(t,v)));rp.addEventListener('change',()=>{st.tr=rp.value==='none'?null:+rp.value;upd()});
+  const rl=el('label','row lbl','Reperfusion');rl.style.cssText='gap:6px;text-transform:none;letter-spacing:0';rl.appendChild(rp);$('#corRep',c).appendChild(rl);
+  segment($('#corCtl',c),[['right','Right dominant'],['left','Left dominant'],['co','Co-dominant']],'right',v=>{st.dom=v;upd()});
+  const wr=el('input');wr.type='checkbox';wr.id='corWrap';wr.addEventListener('change',()=>{st.wrap=wr.checked;upd()});const wl=el('label','row lbl','Wraparound LAD');wl.style.cssText='gap:6px;text-transform:none;letter-spacing:0';wl.prepend(wr);$('#corCtl',c).appendChild(wl);
+  const vw=Viewer($('#corV',c),{foot:'ST vector from the injured segments. Drag to measure.'});
+  const PTS={LM:[176,62],pLAD:[188,92],mLAD:[196,150],dLAD:[206,236],D1:[224,118],pLCx:[222,70],OM:[290,130],pRCA:[140,72],mRCA:[86,170],dRCA:[130,282]};
+  function tree(){const dom=st.dom,down=k=>{const o=st.occ,dn={LM:['LM','pLAD','mLAD','dLAD','D1','pLCx','OM'],pLAD:['pLAD','mLAD','dLAD','D1'],mLAD:['mLAD','dLAD'],dLAD:['dLAD'],D1:['D1'],pLCx:['pLCx','OM'],OM:['OM'],pRCA:['pRCA','mRCA','dRCA'],mRCA:['mRCA','dRCA'],dRCA:['dRCA']}[o]||[];return dn.includes(k)};
+    const art=(k,d,dash)=>`<path d="${d}" fill="none" stroke="${down(k)?'var(--muted)':'var(--bad)'}" stroke-width="${k==='LM'?7:5}" stroke-linecap="round" ${down(k)||dash?`stroke-dasharray="${down(k)?'5 5':'2 6'}"`:''} opacity="${down(k)?.6:.9}"/>`;
+    let s=`<path d="M70 120 C60 60 140 40 180 52 C230 40 320 60 320 140 C320 230 250 320 205 330 C160 320 70 250 70 120 Z" fill="var(--soft)" stroke="var(--muted)" stroke-width="1.5"/><path d="M160 20 L160 55 M196 20 L196 55" stroke="var(--muted)" stroke-width="2"/><text x="178" y="16" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">Aorta</text>`;
+    s+=art('LM','M172 56 L188 70')+art('pLAD','M188 70 C190 85 192 100 194 120')+art('mLAD','M194 120 C197 160 200 190 203 220')+art('dLAD','M203 220 C206 250 207 280 205 318')+art('D1','M192 100 C215 110 240 130 262 160');
+    s+=art('pLCx','M188 70 C215 66 250 70 285 92')+art('OM','M285 92 C295 120 300 160 296 200')+`<path d="M285 92 C305 108 315 140 312 180" fill="none" stroke="var(--line)" stroke-width="3" stroke-dasharray="3 5"/>`;
+    s+=art('pRCA','M160 58 C130 60 108 80 98 110')+art('mRCA','M98 110 C84 150 84 200 98 240')+`<path d="M90 150 C110 170 125 200 135 230" fill="none" stroke="${['pRCA'].includes(st.occ)?'var(--muted)':'var(--bad)'}" stroke-width="3" opacity=".7"/>`+art('dRCA','M98 240 C110 275 130 295 160 305',true);
+    s+=`<text x="40" y="132" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">RCA</text><text x="140" y="214" font-size="10" fill="var(--muted)" font-family="var(--font-ui)">RV branch</text><text x="214" y="200" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">LAD</text><text x="268" y="176" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">D1</text><text x="296" y="84" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">LCx</text><text x="300" y="214" font-size="11" fill="var(--muted)" font-family="var(--font-ui)">OM</text><text x="150" y="324" font-size="10" fill="var(--muted)" font-family="var(--font-ui)">${dom==='left'?'PDA from LCx':'PDA (posterior)'}</text>`;
+    Object.entries(PTS).forEach(([k,[x,y]])=>{const on=st.occ===k;s+=`<g class="el" tabindex="0" role="button" data-k="${k}" aria-label="Occlude ${OCC[k].name}"><circle cx="${x}" cy="${y}" r="${on?11:8}" fill="${on?'var(--ink)':'var(--panel)'}" stroke="var(--ink)" stroke-width="2"/>${on?`<path d="M${x-5} ${y-5}L${x+5} ${y+5}M${x+5} ${y-5}L${x-5} ${y+5}" stroke="var(--panel)" stroke-width="2.5"/>`:''}</g>`});
+    $('#corTree',c).innerHTML=s;$$('#corTree .el',c).forEach(g=>{const go=()=>{st.occ=g.dataset.k;upd()};g.addEventListener('click',go);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})})}
+  function eye(segs){const ring=(r0,r1,a0,a1)=>{const p=(r,a)=>[r*Math.cos(a*D2R),r*Math.sin(a*D2R)],[x0,y0]=p(r1,a0),[x1,y1]=p(r1,a1),[x2,y2]=p(r0,a1),[x3,y3]=p(r0,a0),lg=a1-a0>180?1:0;return`M${x0} ${y0}A${r1} ${r1} 0 ${lg} 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 ${lg} 0 ${x3} ${y3}Z`};
+    const B=[[-120,-60],[-180,-120],[120,180],[60,120],[0,60],[-60,0]],Ap=[[-135,-45],[135,225],[45,135],[-45,45]];let s='';
+    const f=k=>segs.includes(k)?'var(--bad)':'var(--soft)',op=k=>segs.includes(k)?.75:1;
+    B.forEach(([a,b],i)=>{s+=`<path d="${ring(.8,1.2,a,b)}" fill="${f(i+1)}" opacity="${op(i+1)}" stroke="var(--panel)" stroke-width=".02"/><path d="${ring(.42,.8,a,b)}" fill="${f(i+7)}" opacity="${op(i+7)}" stroke="var(--panel)" stroke-width=".02"/>`});
+    Ap.forEach(([a,b],i)=>{s+=`<path d="${ring(.16,.42,a,b)}" fill="${f(13+i)}" opacity="${op(13+i)}" stroke="var(--panel)" stroke-width=".02"/>`});s+=`<circle r=".16" fill="${f(17)}" opacity="${op(17)}" stroke="var(--panel)" stroke-width=".02"/>`;
+    s+=`<text x="0" y="-1.08" font-size=".1" text-anchor="middle" fill="var(--ink)" font-family="var(--font-ui)">Ant</text><text x="0" y="1.15" font-size=".1" text-anchor="middle" fill="var(--ink)" font-family="var(--font-ui)">Inf</text><text x="-1.18" y=".03" font-size=".1" text-anchor="start" fill="var(--ink)" font-family="var(--font-ui)">Sept</text><text x="1.18" y=".03" font-size=".1" text-anchor="end" fill="var(--ink)" font-family="var(--font-ui)">Lat</text>`;
+    if(segs.includes('RV'))s+=`<text x="-1.2" y="-1.1" font-size=".1" fill="var(--bad)" font-family="var(--font-ui)">+ RV</text>`;$('#corEye',c).innerHTML=s}
+  let tmr=0;function upd(){tree();const segs=occSegs(st.occ,st.dom,st.wrap);eye(segs);clearTimeout(tmr);tmr=setTimeout(()=>{const R=corRecord({occ:st.occ,dom:st.dom,wrap:st.wrap,tm:corTime[st.ti][0],tr:st.tr});vw.setRec(R);vw.setAnn(true);
+    const up=(R.ann.find(a=>a.txt==='ST elevation')||{leads:[]}).leads,dn=(R.ann.find(a=>a.txt==='ST depression')||{leads:[]}).leads,s=R.stage;
+    $('#corTx',c).innerHTML=`<b>${OCC[st.occ].name}${st.dom!=='right'&&(/RCA|LCx|OM/.test(st.occ))?` (${st.dom} dominant)`:''} · ${s.label}, ${corTime[st.ti][1]}${st.tr!=null?`, reperfused at ${st.tr<60?st.tr+' min':st.tr/60+' h'}`:''}.</b> Elevation: ${up.join(', ')||'none'}. Depression: ${dn.join(', ')||'none'}. ${OCC[st.occ].note} ${s.hyp>.3?'Early on, the T waves are hyperacute: broad, tall and bulky relative to the QRS, before much ST elevation.':''}${s.q>.3?' Q waves are forming: dead myocardium no longer contributes forces, so the vector points away from the infarct.':''}${s.tinv>.3?(st.tr!=null&&corTime[st.ti][0]>st.tr?' After reperfusion, ST elevation falls quickly and the T waves invert (reperfusion T waves, like Wellens).':' The T waves are inverting as the infarct evolves.'):''}`},80)}
+  upd();return{draw:()=>vw.draw()}}
+
+/* ============ atlas: mechanisms page ============ */
+function buildMech(){const H=$('#aMech');H.innerHTML='';AX.draws.mech=[];
+  const labs=[['ap','Action potentials & ions',buildApLab],['cond','Conduction system',typeof buildCondLab==='function'?buildCondLab:null],['cor','Coronary flow & occlusion',typeof buildCorLab==='function'?buildCorLab:null]].filter(x=>x[2]);
+  const nav=el('div','row');H.appendChild(nav);const box=el('div','stack');H.appendChild(box);const made={};
+  const show=k=>{$$('.mpane',box).forEach(p=>p.hidden=p.dataset.k!==k);if(!made[k]){const p=el('div','stack mpane');p.dataset.k=k;box.appendChild(p);made[k]=labs.find(l=>l[0]===k)[2](p)}AX.draws.mech=[()=>made[k]&&made[k].draw&&made[k].draw()];setTimeout(()=>AX.draws.mech.forEach(f=>f()),0)};
+  segment(nav,labs.map(l=>[l[0],l[1]]),'ap',show);show('ap')}
 /* ============ tabs & atlas sub-sections ============ */
-const SUBS={sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig},SID={pat:'#aPat',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig'};
+const SUBS={mech:buildMech,sys:buildSys,lead:buildLead,rate:buildRate,sig:buildSig},SID={pat:'#aPat',mech:'#aMech',sys:'#aSys',lead:'#aLead',rate:'#aRate',sig:'#aSig'};
 function redrawSub(){if(AX.cur==='pat'){aViewer.draw();return}(AX.draws[AX.cur]||[]).forEach(f=>f())}
 function setSub(s){AX.cur=s;$$('#aSub button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sub===s)));Object.keys(SID).forEach(k=>$(SID[k]).hidden=k!==s);
   if(s!=='pat'&&!AX.built[s]){AX.built[s]=1;SUBS[s]()}if(s==='pat'&&!aCur)showAtlas('nsr');redrawSub()}

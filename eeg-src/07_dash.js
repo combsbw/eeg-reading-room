@@ -1,0 +1,31 @@
+/* ============ dashboard ============ */
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function renderDash(){const d=$('#tab-dash'),A=DB.answers,st=patStats(),tot=A.length,ok=A.filter(a=>a.ok).length,unaided=A.filter(a=>!a.h),uok=unaided.filter(a=>a.ok).length;
+  const locs=DB.locs||[],lok=locs.filter(l=>l.ok).length;
+  const cats=Object.keys(CAT).map(c=>{const ids=P.filter(p=>p.cat===c).map(p=>p.id);let n=0,o=0;ids.forEach(i=>{n+=st[i].n;o+=st[i].ok});return{c,n,o}});
+  const tiles=`<div class="tiles"><div class="card tile"><div class="lbl">Answered</div><div class="n">${tot}</div><div class="s">${(DB.exams||[]).length} ${(DB.exams||[]).length===1?'exam':'exams'} taken</div></div>
+  <div class="card tile"><div class="lbl">Accuracy</div><div class="n">${tot?pct(ok,tot)+'%':'–'}</div><div class="s">${unaided.length?`${pct(uok,unaided.length)}% without hints`:'no answers yet'}</div></div>
+  <div class="card tile"><div class="lbl">Best streak</div><div class="n">${DB.best||0}</div><div class="s">in a row, practice mode</div></div>
+  <div class="card tile"><div class="lbl">Localization</div><div class="n">${locs.length?pct(lok,locs.length)+'%':'–'}</div><div class="s">${locs.length} localization answers</div></div></div>`;
+  // trend
+  let trend='';if(tot>=4){const w=10,pts=[];for(let i=0;i<tot;i++){const s=A.slice(Math.max(0,i-w+1),i+1);pts.push(s.filter(a=>a.ok).length/s.length)}
+    const W_=640,H_=140,pl=34,pb=22,pt=10,pr=10,x=i=>pl+(tot>1?i/(tot-1):0)*(W_-pl-pr),y=v=>pt+(1-v)*(H_-pt-pb);
+    const line=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+    trend=`<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Rolling accuracy (last 10 answers)</h3><span class="lbl">${tot} answers</span></div><div class="tw"><svg viewBox="0 0 ${W_} ${H_}" width="100%" style="min-width:420px;max-height:180px" role="img" aria-label="Rolling accuracy over time">
+    ${[0,.5,1].map(v=>`<line x1="${pl}" x2="${W_-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid-major)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${v*100}%</text>`).join('')}
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/><circle cx="${x(tot-1)}" cy="${y(pts[tot-1])}" r="4" fill="var(--accent)"/>
+    <text x="${pl}" y="${H_-4}" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">first answer</text><text x="${W_-pr}" y="${H_-4}" text-anchor="end" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">latest</text></svg></div></div>`}
+  const bars=`<div class="card stack"><h3>By category</h3><div class="bars">${cats.map(c=>`<div class="bar"><span>${CAT[c.c]}</span><div class="track"><div class="fill" style="width:${pct(c.o,c.n)}%"></div></div><span class="v">${c.n?pct(c.o,c.n)+'% · '+c.n:'not seen'}</span></div>`).join('')}</div></div>`;
+  const heat=`<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Every pattern</h3><span class="lbl">green 80%+ · amber 50–79% · red under 50%</span></div><div class="heat">${P.map(p=>{const s=st[p.id],a=s.n?s.ok/s.n:null,cls=a===null?'u':a>=.8?'g':a>=.5?'a':'r';return`<button class="cell ${cls}" data-open="${p.id}" type="button"><span class="nm">${p.name}</span><span class="pc">${s.n?pct(s.ok,s.n)+'% · '+s.n:'unseen'}</span></button>`}).join('')}</div></div>`;
+  // confusions
+  const conf={};A.filter(a=>!a.ok&&a.ch).forEach(a=>{const k=a.pid+'>'+a.ch;conf[k]=(conf[k]||0)+1});const cl=Object.entries(conf).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const confH=`<div class="card stack"><h3>Most common mix-ups</h3>${cl.length?`<div class="tw"><table><thead><tr><th>It was</th><th>You said</th><th>Times</th></tr></thead><tbody>${cl.map(([k,n])=>{const[a,b]=k.split('>');return`<tr><td>${PM[a].name}</td><td>${PM[b].name}</td><td>${n}</td></tr>`}).join('')}</tbody></table></div>`:'<p style="color:var(--muted)">No mistakes recorded yet.</p>'}</div>`;
+  // weak
+  const weak=P.map(p=>({p,s:st[p.id]})).filter(x=>x.s.n>=1&&x.s.ok/x.s.n<.8).sort((a,b)=>a.s.ok/a.s.n-b.s.ok/b.s.n||b.s.n-a.s.n).slice(0,5);
+  const weakH=`<div class="card stack"><h3>Review next</h3>${weak.length?`<ul class="f" style="margin:0">${weak.map(w=>`<li>${w.p.name} <span class="lbl">${pct(w.s.ok,w.s.n)}% · ${w.s.n}</span></li>`).join('')}</ul><div class="row"><button class="btn primary" id="drillBtn" type="button">Drill these patterns</button></div>`:`<p style="color:var(--muted)">${tot?'Nothing below 80% yet. Try Hard difficulty or an exam.':'Answer a few questions and your weakest patterns will be listed here.'}</p>`}</div>`;
+  const exH=(DB.exams||[]).length?`<div class="card stack"><h3>Exam history</h3><div class="tw"><table><thead><tr><th>Date</th><th>Score</th></tr></thead><tbody>${DB.exams.slice(-6).reverse().map(e=>`<tr><td>${new Date(e.ts).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td><td>${e.score} / ${e.n}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+  d.innerHTML=tiles+`<div class="two">${bars}${weakH}</div>`+trend+heat+`<div class="two">${confH}${exH||'<div></div>'}</div><div class="row"><button class="btn small" id="resetBtn" type="button">Reset progress</button><span id="resetMsg" class="lbl"></span></div>`;
+  $$('[data-open]',d).forEach(b=>b.addEventListener('click',()=>openAtlas(b.dataset.open)));
+  const db=$('#drillBtn',d);if(db)db.addEventListener('click',()=>{setDrill(weak.map(w=>w.p.id));setTab('quiz')});
+  const rb=$('#resetBtn',d);rb.addEventListener('click',()=>{if(rb.dataset.arm){DB={answers:[],locs:[],exams:[],best:0};store.save(DB);renderDash()}else{rb.dataset.arm=1;rb.textContent='Click again to erase all progress';setTimeout(()=>{rb.dataset.arm='';rb.textContent='Reset progress'},4000)}})}
+

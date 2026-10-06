@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>EEG Reading Room</title>
+<meta name="theme-color" content="#edf0f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e151c" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Interactive EEG training: synthetic tracings, quiz, atlas and progress dashboard. Works offline.">
+<!--PWAHEAD-->
+
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>EEG Reading Room</h1>
+      <p>Synthetic tracings for training your eye: normal rhythms, benign variants, artifacts and the classic abnormal patterns. Every example is redrawn with new timing and sides.</p>
+      <!--SISTER-->
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tb-quiz" data-tab="quiz" aria-selected="true">Quiz</button>
+      <button role="tab" id="tb-atlas" data-tab="atlas" aria-selected="false">Atlas</button>
+      <button role="tab" id="tb-dash" data-tab="dash" aria-selected="false">Dashboard</button>
+    </nav>
+  </header>
+
+  <!-- QUIZ -->
+  <section id="tab-quiz" class="stack" role="tabpanel" aria-labelledby="tb-quiz">
+    <div class="card stack" id="qSetup">
+      <div class="row">
+        <div class="row"><span class="lbl">Mode</span>
+          <div class="seg" id="segMode"><button data-v="practice" aria-pressed="true">Practice</button><button data-v="exam" aria-pressed="false">Exam (10)</button></div></div>
+        <div class="row"><span class="lbl">Difficulty</span>
+          <div class="seg" id="segDiff"><button data-v="easy" aria-pressed="false">Easy</button><button data-v="standard" aria-pressed="true">Standard</button><button data-v="hard" aria-pressed="false">Hard</button></div></div>
+      </div>
+      <div class="row" id="catChips"><span class="lbl">Include</span></div>
+      <div class="row">
+        <button class="btn primary" id="qStart">Start</button>
+        <span id="qDrill" class="chip" hidden></span>
+        <span class="lbl" id="qHelp">Keys: 1–4 answer · H hint · N next</span>
+      </div>
+      <details>
+        <summary>A systematic way to read a page</summary>
+        <ol>
+          <li><b>Technical.</b> Montage, sensitivity, filters, patient state and age.</li>
+          <li><b>Background.</b> Posterior rhythm frequency, symmetry, reactivity; the front-to-back gradient.</li>
+          <li><b>Slowing.</b> Focal or generalized, polymorphic or rhythmic.</li>
+          <li><b>Epileptiform.</b> Aftergoing slow wave, physiologic field, disruption of background.</li>
+          <li><b>Periodic or rhythmic patterns.</b> Lateralized or generalized, rate, evolution.</li>
+          <li><b>Artifact.</b> Is it confined to one electrode, locked to the ECG, or high-frequency?</li>
+          <li><b>Localize.</b> Phase reversals in bipolar, field in referential.</li>
+          <li><b>Impression.</b> Normal or abnormal, degree, distribution, clinical question.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div id="qIntro" class="card">
+      <h2>Pick a mode and press Start</h2>
+      <p style="margin-top:6px;color:var(--muted);max-width:70ch">Practice shows an explanation after every answer and adapts to the patterns you miss. Exam runs ten different patterns and shows the review at the end. You can change montage, sensitivity and filters on any tracing, and drag across it to measure time and frequency.</p>
+    </div>
+
+    <div id="qStage" class="stack" hidden>
+      <div class="row" id="qMeta" style="justify-content:space-between">
+        <div class="row" style="gap:12px"><span class="lbl" id="qCount"></span><div class="prog" style="width:140px" id="qProgWrap" hidden><i id="qProg" style="width:0"></i></div></div>
+        <label class="row lbl" style="gap:6px;text-transform:none;letter-spacing:0"><input type="checkbox" id="qAnn"> Show teaching marks</label>
+      </div>
+      <div id="qViewer"></div>
+      <div class="card stack" id="qCard"></div>
+    </div>
+  </section>
+
+  <!-- ATLAS -->
+  <section id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
+    <div class="row" style="margin-bottom:14px"><div class="seg" id="aSub" role="group" aria-label="Atlas section"><button type="button" data-sub="pat" aria-pressed="true">Patterns</button><button type="button" data-sub="rhy" aria-pressed="false">Rhythms</button><button type="button" data-sub="lead" aria-pressed="false">Leads &amp; montages</button><button type="button" data-sub="sig" aria-pressed="false">Signal &amp; filters</button></div></div>
+    <div class="atlas" id="aPat">
+      <div class="card"><div class="plist" id="aList"></div></div>
+      <div class="stack" style="min-width:0">
+        <div class="row" style="justify-content:space-between">
+          <div class="row" style="gap:12px"><h2 id="aName"></h2><span class="pill" id="aCat"></span></div>
+          <div class="row" style="gap:12px">
+            <label class="row lbl" style="gap:6px;text-transform:none;letter-spacing:0"><input type="checkbox" id="aAnn" checked> Teaching marks</label>
+            <button class="btn small" id="aNew">New example</button>
+          </div>
+        </div>
+        <div id="aViewer"></div>
+        <div class="card two" id="aInfo"></div>
+      </div>
+    </div>
+    <div class="stack" id="aRhy" hidden></div>
+    <div class="stack" id="aLead" hidden></div>
+    <div class="stack" id="aSig" hidden></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dash" class="stack" role="tabpanel" aria-labelledby="tb-dash" hidden></section>
+
+  <p class="foot">Tracings are computer-generated teaching models, not patient recordings. Real EEG is messier and more variable, and nothing here is for clinical interpretation. Few EEG patterns are strictly pathognomonic; the abnormal examples are the classic or highly characteristic ones, and each carries caveats about context. Negativity is plotted upward, as is the convention.</p>
+</div>
+
+<script>
+/*JS*/
+</script>
+<!--PWASW-->
+</body>
+</html>

@@ -154,6 +154,7 @@ tbody tr[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,var
 @media (max-width:860px){.two,.atlas{grid-template-columns:1fr}.plist{max-height:none;flex-direction:row;flex-wrap:wrap}.plist h3{width:100%}}
 @media (max-width:560px){.qgrid{grid-template-columns:1fr}.bar{grid-template-columns:84px 1fr 70px}h1{font-size:22px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -1064,6 +1065,7 @@ buildAtlasList();
 const h0=(location.hash||'').slice(1);if(['quiz','atlas','dash'].includes(h0))setTab(h0);
 const hs=h0.split('/');if(hs[0]==='atlas'&&SUBS[hs[1]]){setTab('atlas');setSub(hs[1])}
 })();
+
 </script>
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('Service worker not registered',e)})})}
